@@ -19,7 +19,9 @@ Each family includes:
 
 ### Canonical Structure
 
+```text
 A → B → C → D
+```
 
 ### Structural Meaning
 
@@ -45,7 +47,9 @@ creating a single valid execution order.
 
 ### Canonical Structure
 
+```text
 A   B   C   D
+```
 
 (no dependency relations)
 
@@ -71,6 +75,7 @@ All tasks may be completed in arbitrary order.
 ## Diamond Structures
 
 ### Canonical Structure
+```text
 
     A
    / \
@@ -78,6 +83,7 @@ All tasks may be completed in arbitrary order.
    \ /
     D
 
+```
 ### Structural Meaning
 
 Fork-join synchronization structure.
@@ -95,3 +101,32 @@ reconverge.
 - Local branching with constrained reconvergence
 - Small but nontrivial flexibility
 - Useful benchmark for synchronization bottlenecks
+
+## N-Posets
+
+### Canonical Structure
+
+```text
+  A   C
+   \ / \
+    B   D
+```
+
+### Structural Meaning
+
+An asymmetric dependency structure where a shared prerequisite
+participates in multiple partially overlapping constraint paths.
+Unlike a diamond structure, the dependencies do not cleanly diverge
+and reconverge, creating more entangled execution relationships.
+
+### Canonical Analogies
+
+- Bureaucratic approval systems where one office or document is required for multiple partially independent approval chains.
+- A signoff process where approval B requires work from both A and C, while C must also independently complete approval D for a separate administrative requirement.
+
+### Mathematical Notes
+
+- Related to classical zig-zag and fence-style poset structures.
+- Connected to up-down (alternating) dependency patterns in finite posets.
+- Represents a minimal asymmetric dependency motif with intertwined constraint paths.
+- Structurally more entangled than chains, anti-chains, or symmetric diamond structures.
