@@ -18,6 +18,7 @@ The project models workflows as dependency structures (partially ordered sets/DA
 
 ## Project Structure
 
+```text
 src/
     poset.py
     enumeration.py
@@ -28,6 +29,7 @@ tests/
 
 docs/
     workflow_families.md
+```
 
 ## Running Tests
 
