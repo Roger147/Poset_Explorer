@@ -50,3 +50,20 @@ def test_diamond_poset():
     count = enumerator.count_linear_extensions()
 
     assert count == 2
+def test_N_poset():
+
+    elements = {"A", "B", "C", "D"}
+
+    relations = [
+        ("A", "B"),
+        ("C", "B"),
+        ("C", "D")
+    ]
+
+    poset = Poset(elements, relations)
+
+    enumerator = IdealEnumerator(poset)
+
+    count = enumerator.count_linear_extensions()
+
+    assert count == 5    
