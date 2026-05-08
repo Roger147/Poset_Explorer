@@ -130,3 +130,38 @@ and reconverge, creating more entangled execution relationships.
 - Connected to up-down (alternating) dependency patterns in finite posets.
 - Represents a minimal asymmetric dependency motif with intertwined constraint paths.
 - Structurally more entangled than chains, anti-chains, or symmetric diamond structures.
+
+## Asymmetric Convergence
+
+### Canonical Structure
+
+```text
+C₁ → z
+C₂ → z
+⋮
+Cᵢ → z
+
+where:
+- each Cᵢ is a chain,
+- all chains converge into a shared upper element z,
+- and there exists at least one pair Cₓ, Cᵧ such that:
+length(Cₓ) ≠ length(Cᵧ)
+```
+
+### Structural Meaning
+
+A convergent dependency structure in which multiple upstream chains of unequal depth feed into a shared downstream constraint.
+
+Asymmetric convergence structures are useful for studying how uneven dependency interactions may influence traversal flexibility and ideal-growth behavior, particularly when multiple convergence regions overlap or interact.
+
+### Canonical Analogies
+
+- Bureaucratic approval systems where multiple independent approval paths converge into a final authorization step, but some approval chains require substantially more intermediate processing than others.
+- Multi-stage workflows in which a shared downstream task depends on several prerequisite pipelines of differing complexity or depth.
+
+### Mathematical Notes
+
+- Represents uneven convergence into a shared upper constraint.
+- Useful as a benchmark motif for studying irregular ideal growth and memoization-sensitive traversal behavior.
+- Highlights how globally difficult traversal behavior can emerge from relatively simple local dependency components.
+- Related to convergent and layered dependency structures in finite partial orders and DAGs.
