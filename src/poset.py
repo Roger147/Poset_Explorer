@@ -1,3 +1,4 @@
+import queue
 from typing import Set, FrozenSet, List, Dict
 
 class Poset:
@@ -18,6 +19,7 @@ class Poset:
             self.adj[u].append(v)
             self.parents[v].append(u)
             self.global_in_degree[v] += 1
+        self._check_for_cycles()
 
     def _find_minimal_elements_in_subposet(self, subset: FrozenSet[str]) -> List[str]:
         
@@ -40,5 +42,19 @@ class Poset:
             if is_minimal:
                 minimal_elements.append(node)
         return minimal_elements
+    
+    def _check_for_cycles(self):
+        in_degree = dict(self.global_in_degree)
+        queue = [n for n, deg in in_degree.items() if deg == 0]
+        visited = 0
 
+        while queue:
+            u = queue.pop()
+            visited += 1
+            for v in self.adj[u]:
+                in_degree[v] -= 1
+                if in_degree[v] == 0:
+                    queue.append(v)
 
+        if visited != len(self.elements):
+            raise ValueError("Invalid poset: relations contain a cycle.")
