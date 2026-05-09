@@ -3,9 +3,10 @@
 This document catalogs recurring dependency structures used as benchmark
 families and motivating examples throughout the project.
 
-The goal is not to fully model real-world systems, but to study
-structurally meaningful workflow patterns that appear in constrained
-task systems.
+The goal is not to model real-world systems in full fidelity, but to study
+structurally meaningful workflow patterns that arise in constrained task
+systems. Each family highlights a canonical dependency motif and its
+combinatorial behavior.
 
 Each family includes:
 - a structural description,
@@ -19,27 +20,24 @@ Each family includes:
 
 ### Canonical Structure
 
-```text
+```
 A → B → C → D
 ```
 
 ### Structural Meaning
 
 Minimal scheduling flexibility.
+Each task depends entirely on the previous one, yielding a single valid
+execution order.
 
-Each task depends entirely on the completion of the previous task,
-creating a single valid execution order.
-
-### Canonical Analogy
-
-- Sequential manufacturing pipelines or staged chemical preparation procedures.
-- Basic train or bus schedule: in particular, a fixed route where each stop must occur in sequence. 
+### Canonical Analogies
+- Sequential manufacturing or staged chemical preparation.
+- Fixed-route transit schedules where each stop must occur in sequence.
 
 ### Mathematical Notes
-
-- Exactly one linear extension
-- Maximal dependency concentration
-- Minimal branching behavior
+- Exactly one linear extension.
+- Maximal dependency concentration.
+- No branching behavior.
 
 ---
 
@@ -47,89 +45,77 @@ creating a single valid execution order.
 
 ### Canonical Structure
 
-```text
+```
 A   B   C   D
 ```
-
 (no dependency relations)
 
 ### Structural Meaning
+Maximum scheduling flexibility.  
+All tasks are independent and may be completed in any order.
 
-Maximum scheduling flexibility.
-
-All tasks may be completed in arbitrary order.
-
-### Canonical Analogy
-
-- Independent preprocessing jobs in a distributed compute environment.
-- Recording attendance in a single classroom, or completing a grocery checklist.
+### Canonical Analogies
+- Independent preprocessing jobs in distributed computing.
+- Completing a checklist or recording attendance.
 
 ### Mathematical Notes
-
-- Number of linear extensions grows factorially
-- Maximal symmetry
-- Useful as an upper-flexibility benchmark
+- Number of linear extensions grows factorially.
+- Maximal symmetry.
+- Serves as an upper-flexibility benchmark.
 
 ---
 
 ## Diamond Structures
 
 ### Canonical Structure
-```text
-
+```
     A
    / \
   B   C
    \ /
     D
-
 ```
 ### Structural Meaning
-
-Fork-join synchronization structure.
-
+A fork–join synchronization pattern.  
 A single task branches into partially independent subtasks that later
 reconverge.
 
-### Canonical Analogy
-
-- Parallel experimental analyses that must both complete before final aggregation or reporting.
-- The pipeline of approving funding, doing separate work or experiments, then combining into a final report.
+### Canonical Analogies
+- Parallel analyses that must both complete before final aggregation.
+- Approval → parallel work → final report pipelines.
 
 ### Mathematical Notes
-
-- Local branching with constrained reconvergence
-- Small but nontrivial flexibility
-- Useful benchmark for synchronization bottlenecks
+- Local branching with constrained reconvergence.
+- Small but nontrivial flexibility.
+- Useful benchmark for synchronization bottlenecks.
 
 ## N-Posets
 
 ### Canonical Structure
 
-```text
+```
   A   C
    \ / \
     B   D
 ```
 
 ### Structural Meaning
-
-An asymmetric dependency structure where a shared prerequisite
-participates in multiple partially overlapping constraint paths.
-Unlike a diamond structure, the dependencies do not cleanly diverge
-and reconverge, creating more entangled execution relationships.
+An asymmetric dependency structure where a shared prerequisite participates
+in multiple partially overlapping constraint paths. Unlike a diamond,
+dependencies do not cleanly diverge and reconverge, producing more entangled
+execution relationships.
 
 ### Canonical Analogies
-
-- Bureaucratic approval systems where one office or document is required for multiple partially independent approval chains.
-- A signoff process where approval B requires work from both A and C, while C must also independently complete approval D for a separate administrative requirement.
+- A required document or approval feeding multiple partially independent
+  administrative chains.
+- A signoff process where B depends on both A and C, while C must also
+  complete D for a separate requirement.
 
 ### Mathematical Notes
-
-- Related to classical zig-zag and fence-style poset structures.
-- Connected to up-down (alternating) dependency patterns in finite posets.
-- Represents a minimal asymmetric dependency motif with intertwined constraint paths.
-- Structurally more entangled than chains, anti-chains, or symmetric diamond structures.
+- Related to zig-zag and fence-style posets.
+- Exhibits alternating up–down dependency patterns.
+- Minimal asymmetric motif with intertwined constraint paths.
+- More entangled than chains, anti-chains, or symmetric diamonds.
 
 ## Asymmetric Convergence
 
@@ -144,24 +130,24 @@ Cᵢ → z
 where:
 - each Cᵢ is a chain,
 - all chains converge into a shared upper element z,
-- and there exists at least one pair Cₓ, Cᵧ such that:
-length(Cₓ) ≠ length(Cᵧ)
+- and at least one pair Cₓ, Cᵧ satisfies length(Cₓ) ≠ length(Cᵧ)
 ```
 
 ### Structural Meaning
-
-A convergent dependency structure in which multiple upstream chains of unequal depth feed into a shared downstream constraint.
-
-Asymmetric convergence structures are useful for studying how uneven dependency interactions may influence traversal flexibility and ideal-growth behavior, particularly when multiple convergence regions overlap or interact.
+Multiple upstream chains of unequal depth feed into a shared downstream
+constraint. These structures highlight how uneven dependency interactions
+influence traversal flexibility and ideal-growth behavior.
 
 ### Canonical Analogies
-
-- Bureaucratic approval systems where multiple independent approval paths converge into a final authorization step, but some approval chains require substantially more intermediate processing than others.
-- Multi-stage workflows in which a shared downstream task depends on several prerequisite pipelines of differing complexity or depth.
+- Multi-stage approval processes where some prerequisite pipelines are
+  substantially deeper than others.
+- Workflows where a final task depends on several pipelines of differing
+  complexity.
 
 ### Mathematical Notes
-
 - Represents uneven convergence into a shared upper constraint.
-- Useful as a benchmark motif for studying irregular ideal growth and memoization-sensitive traversal behavior.
-- Highlights how globally difficult traversal behavior can emerge from relatively simple local dependency components.
-- Related to convergent and layered dependency structures in finite partial orders and DAGs.
+- Useful for studying irregular ideal growth and memoization-sensitive
+  traversal behavior.
+- Demonstrates how globally complex behavior can emerge from simple local
+  components.
+- Related to convergent and layered dependency structures in finite posets.

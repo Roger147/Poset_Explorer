@@ -1,20 +1,28 @@
 # Workflow Dependency Structure Analyzer
 
-A framework for analyzing how dependency constraints affect the flexibility and structure of possible workflows.
+A lightweight research framework for studying how dependency constraints shape the space of valid workflows.  
+Workflows are modeled as partially ordered sets (posets/DAGs), and the project focuses on the combinatorial structure of their linear extensions and order ideals.
 
-The project models workflows as dependency structures (partially ordered sets/DAGs) and studies valid execution orders through combinatorial enumeration techniques.
+## Current Capabilities
 
-## Current status
-- Poset construction and validation implemented
-- Exact linear-extension enumeration implemented
-- Order-ideal layer analysis implemented
+- **Poset construction and validation**  
+  Hasse diagram representation with cycle detection and parent/child adjacency maps.
 
-## Current work focuses on:
+- **Exact linear-extension enumeration**  
+  Memoized recursion over dual order ideals (O(2^n) worst-case).
+
+- **Order-ideal traversal and lattice-layer analysis**  
+  Groups ideals by rank to visualize the structure of the distributive lattice J(P).
+
+## Research Focus
+
+Current work centers on:
 
 - exact linear-extension counting,
 - traversal of order ideals,
 - lattice-layer analysis,
-- and structural memoization strategies for repeated subproblems.
+- structural memoization strategies for repeated subproblems,
+- and exploring canonical workflow families.
 
 ## Project Structure
 
