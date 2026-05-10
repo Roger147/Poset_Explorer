@@ -1,6 +1,5 @@
  
 from collections import defaultdict
-import itertools
 from typing import Dict, FrozenSet
 from ideal import Ideal
 
@@ -45,20 +44,44 @@ class PosetAnalyzer:
         return compute_paths(initial_subposet)
 
     def get_lattice_layers(self):
-        layers = defaultdict(list)
-    
-        # Generate all possible subsets
-        for r in range(len(self.poset.elements) + 1):
-            for subset in itertools.combinations(self.poset.elements, r):
-                # Check if it's a valid ideal
-                if self._is_valid_ideal(set(subset)):
-                    layers[len(subset)].append(Ideal(subset))
-    
-        return dict(layers)
+        """
+        Construct lattice layers of order ideals J(P) constructively,
+        by growing ideals via parent-closed extensions.
+        """
+        elements = set(self.poset.elements)
+        parents = self.poset.parents  # dict: x -> set of parents
 
-    def _is_valid_ideal(self, subset):
-        for u in subset:
-            for v in self.poset.parents[u]:
-                if v not in subset:
-                    return False
-        return True
+        layers: dict[int, list[Ideal]] = defaultdict(list)
+        seen: set[Ideal] = set()
+
+        # start with the empty ideal
+        start = Ideal()
+        layers[0].append(start)
+        seen.add(start)
+
+        k = 0
+        while True:
+            current_layer = layers.get(k, [])
+            if not current_layer:
+                break
+
+            next_ideals: set[Ideal] = set()
+
+            for I in current_layer:
+                # candidates are elements not yet in the ideal
+                for x in elements - I:
+                # x can be added iff all its parents are already in I
+                    if parents[x].issubset(I):
+                        J = Ideal(I | {x})
+                        if J not in seen:
+                            seen.add(J)
+                            next_ideals.add(J)
+
+            if not next_ideals:
+                break
+
+            layers[k + 1].extend(sorted(next_ideals, key=lambda s: sorted(s)))
+            k += 1
+
+        return dict(layers)
+   

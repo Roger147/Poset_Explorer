@@ -6,18 +6,18 @@ class Poset:
         self.elements: Set[str] = elements
         
         # Hasse diagram forward edges (adjacency list for child nodes)
-        self.adj: Dict[str, List[str]] = {e: [] for e in elements}
+        self.adj: Dict[str, set[str]] = {e: set() for e in elements}
         
         # Dual Hasse diagram backward edges (reverse adjacency list for parent prerequisites)
-        self.parents: Dict[str, List[str]] = {e: [] for e in elements}
+        self.parents: Dict[str, set[str]] = {e: set() for e in elements}
         
         # Global minimal element tracking (base in-degree map)
         self.global_in_degree: Dict[str, int] = {e: 0 for e in elements}
         
         # Population of structural relations
         for u, v in relations:
-            self.adj[u].append(v)
-            self.parents[v].append(u)
+            self.adj[u].add(v)
+            self.parents[v].add(u)
             self.global_in_degree[v] += 1
         self._check_for_cycles()
 

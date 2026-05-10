@@ -19,8 +19,8 @@ def test_basic_poset():
 
     poset = Poset(elements, relations)
 
-    assert poset.adj["A"] == ["B", "C"]
-    assert poset.parents["D"] == ["B", "C"]
+    assert poset.adj["A"] == {"B", "C"}
+    assert poset.parents["D"] == {"B", "C"}
     assert poset.global_in_degree["A"] == 0
     assert poset.global_in_degree["D"] == 2
 
