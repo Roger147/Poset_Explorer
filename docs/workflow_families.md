@@ -151,3 +151,32 @@ influence traversal flexibility and ideal-growth behavior.
 - Demonstrates how globally complex behavior can emerge from simple local
   components.
 - Related to convergent and layered dependency structures in finite posets.
+
+## Crown Posets
+
+### Canonical Structure
+
+```text
+ a₁    a₂    a₃
+ |\    /\    /|
+ | \  /  \  / |
+ |  \/    \/  |
+ |  /\    /\  |
+ | /  \  /  \ |
+ |/    \/    \|
+ b₃    b₂    b₁
+```
+
+### Structural Meaning
+
+Crown posets form a height‑2 structure where each maximal element depends on all but one minimal element, creating a dense web of overlapping constraints. Their alternating exclusion pattern produces a highly symmetric, non‑hierarchical dependency shape that resists simple decomposition.
+
+### Canonical Analogies
+
+- Peer review systems where each reviewer may evaluate every submission
+  except their own.
+
+### Mathematical Notes
+- Non–series–parallel; canonical minimal example of a poset that cannot be decomposed into series or parallel components.
+- High symmetry; strong automorphism structure with uniform behavior across all indices.
+- Classical family; well‑studied benchmark object in combinatorics and extremal poset theory.
