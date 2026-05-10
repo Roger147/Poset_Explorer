@@ -1,8 +1,9 @@
  
 from collections import defaultdict
+import itertools
 from typing import Dict, FrozenSet
 
-class IdealEnumerator:
+class PosetAnalyzer:
 
     def __init__(self, poset):
         self.poset = poset
@@ -39,36 +40,24 @@ class IdealEnumerator:
             return total_extensions
 
         # Initiate traversal passing the global poset elements (full project workload)
-        initial_ideal = frozenset(self.poset.elements)
-        return compute_paths(initial_ideal)
-    
+        initial_subposet = frozenset(self.poset.elements)
+        return compute_paths(initial_subposet)
+
     def get_lattice_layers(self):
-        """
-        Groups the Order Ideals by their size to visualize the 
-        levels of the Distributive Lattice J(P).
-        """
-        memo = {}
-        # We work with Order Ideals (completed tasks) for standard J(P) visualization
-        def compute_paths(current_ideal: frozenset) -> int:
-            if len(current_ideal) == len(self.poset.elements): return 1
-            if current_ideal in memo: return memo[current_ideal]
-
-            # Find elements whose parents are all in the current ideal
-            remaining = set(self.elements) - current_ideal
-            available = [
-                n for n in remaining 
-                if all(p in current_ideal for p in self.poset.parents[n])
-            ]
-            
-            total = sum(compute_paths(current_ideal | {x}) for x in available)
-            memo[current_ideal] = total
-            return total
-
-        total_count = compute_paths(frozenset())
-        
-        # Organize for visualization
         layers = defaultdict(list)
-        for ideal, count in memo.items():
-            layers[len(ideal)].append((sorted(list(ideal)), count))
-            
-        return layers, total_count
+    
+        # Generate all possible subsets
+        for r in range(len(self.poset.elements) + 1):
+            for subset in itertools.combinations(self.poset.elements, r):
+                # Check if it's a valid ideal
+                if self._is_valid_ideal(set(subset)):
+                    layers[len(subset)].append(subset)
+    
+        return dict(layers)
+
+    def _is_valid_ideal(self, subset):
+        for u in subset:
+            for v in self.poset.parents[u]:
+                if v not in subset:
+                    return False
+        return True
