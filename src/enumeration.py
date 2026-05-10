@@ -2,6 +2,7 @@
 from collections import defaultdict
 import itertools
 from typing import Dict, FrozenSet
+from ideal import Ideal
 
 class PosetAnalyzer:
 
@@ -51,7 +52,7 @@ class PosetAnalyzer:
             for subset in itertools.combinations(self.poset.elements, r):
                 # Check if it's a valid ideal
                 if self._is_valid_ideal(set(subset)):
-                    layers[len(subset)].append(frozenset(subset))
+                    layers[len(subset)].append(Ideal(subset))
     
         return dict(layers)
 

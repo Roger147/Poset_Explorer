@@ -1,8 +1,6 @@
 from poset import Poset
-from enumeration import PosetAnalyzer 
-
-def ideal(*args):
-    return frozenset(args)
+from enumeration import PosetAnalyzer
+from ideal import Ideal 
 
 def test_chain_has_one_linear_extension():
 
@@ -87,8 +85,8 @@ def test_Lattice_Layers_diamond():
 
     layers = analyzer.get_lattice_layers()
 
-    assert set(layers[0]) == {ideal()}  # Empty set
-    assert set(layers[1]) == {ideal("A")}  # {A}
-    assert set(layers[2]) == {ideal("A", "B"), ideal("A", "C")}  # {A,B}, {A,C}
-    assert set(layers[3]) == {ideal("A", "B", "C")}  # {A,B,C}
-    assert set(layers[4]) == {ideal("A", "B", "C", "D")}  # {A,B,C,D}    
+    assert set(layers[0]) == {Ideal()}  # Empty set
+    assert set(layers[1]) == {Ideal("A")}  # {A}
+    assert set(layers[2]) == {Ideal({"A", "B"}), Ideal({"A", "C"})}  # {A,B}, {A,C}
+    assert set(layers[3]) == {Ideal({"A", "B", "C"})}  # {A,B,C}
+    assert set(layers[4]) == {Ideal({"A", "B", "C", "D"})}  # {A,B,C,D}    
