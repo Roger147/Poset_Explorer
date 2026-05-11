@@ -1,7 +1,5 @@
-import queue
 from typing import Set, FrozenSet, List, Dict
-
-from matplotlib.style import available
+from ideal import Ideal
 
 class Poset:
     def __init__(self, elements: Set[str], relations: List[tuple[str, str]]):
@@ -27,11 +25,11 @@ class Poset:
 
     def minimals(self) -> list[str]:
         mins = [x for x in self.elements if len(self.parents[x]) == 0]
-        return sorted(mins)
+        return [x for x in self.order if x in mins]
 
     def maximals(self) -> list[str]:
         maxs = [x for x in self.elements if len(self.adj[x]) == 0]
-        return sorted(maxs)    
+        return [x for x in self.order if x in maxs]    
     
     def parents_of(self, x: str) -> list[str]:
         """Return parents of x in canonical order."""
@@ -47,8 +45,8 @@ class Poset:
         for x in subset:
             if all(p not in subset for p in self.parents_of(x)):
                 mins.append(x)
-        return sorted(mins)
-    
+        return [x for x in self.order if x in mins]
+
     def canonical_order(self) -> list[str]:
         """Return a canonical topological ordering using lexicographic tie-breaking."""
         # Copy in-degree so we don't mutate the global one
@@ -56,7 +54,6 @@ class Poset:
 
         # Start with all global minimal elements, sorted lexicographically
         available = sorted([x for x in self.elements if in_degree[x] == 0])
-
         order = []
 
         while available:
@@ -68,12 +65,16 @@ class Poset:
             for child in self.children_of(x):
                 in_degree[child] -= 1
                 if in_degree[child] == 0:
-                # Insert child into the available list in sorted position
-                # (or append then sort — simpler and fine for now)
                     available.append(child)
                     available.sort()
 
         return order
+    
+    def repr_ideal(self, ideal: Ideal) -> str:
+        if not ideal:
+            return "ideal()"
+        ordered = [x for x in self.order if x in ideal]
+        return "ideal(" + ", ".join(ordered) + ")"
 
     def _check_for_cycles(self):
         in_degree = dict(self.global_in_degree)

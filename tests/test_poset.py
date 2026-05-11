@@ -26,12 +26,12 @@ def test_basic_poset():
 
     subset = frozenset({"A", "B", "C", "D"})
 
-    minimal = poset._find_minimal_elements_in_subposet(subset)
+    minimal = poset.minimals_in_subposet(subset)
 
     assert set(minimal) == {"A"}
 
     subsetup = frozenset({"B", "C", "D"})
 
-    minimal = poset._find_minimal_elements_in_subposet(subsetup)
+    minimal = poset.minimals_in_subposet(subsetup)
 
     assert set(minimal) == {"B", "C"}

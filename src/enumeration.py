@@ -61,18 +61,18 @@ class PosetAnalyzer:
             next_ideals: set[Ideal] = set()
 
             for I in current_layer:
-                # candidates are elements not yet in the ideal
-                for x in elements - I:
-                    if all(p in I for p in self.poset.parents_of(x)):
-                        J = Ideal(I | {x})
-                        if J not in seen:
-                            seen.add(J)
-                            next_ideals.add(J)
+                for x in self.poset.order:
+                    if x not in I:
+                        if all(p in I for p in self.poset.parents_of(x)):
+                            J = Ideal(I | {x})
+                            if J not in seen:
+                                seen.add(J)
+                                next_ideals.add(J)
 
             if not next_ideals:
                 break
 
-            layers[k + 1].extend(sorted(next_ideals, key=lambda s: sorted(s)))
+            layers[k + 1].extend(sorted(next_ideals, key=lambda s: [x for x in self.poset.order if x in s]))
             k += 1
 
         return dict(layers)
