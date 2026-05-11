@@ -1,7 +1,12 @@
-# Workflow Dependency Structure Analyzer
+# Poset Explorer
 
-A lightweight research framework for studying how dependency constraints shape the space of valid workflows.  
-Workflows are modeled as partially ordered sets (posets and DAGs), and the project focuses on the combinatorial structure of their linear extensions and order ideals.
+A lightweight exploratory framework for studying finite partially
+ordered sets (posets), dependency structures, and their combinatorial
+behavior.
+
+The project focuses on linear extensions, order ideals, workflow
+families, and traversal structure in constrained systems modeled as
+directed acyclic graphs (DAGs).
 
 > This project is currently an exploratory research-oriented
 > implementation under active development.

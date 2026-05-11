@@ -30,7 +30,7 @@ Minimal scheduling flexibility.
 Each task depends entirely on the previous one, yielding a single valid
 execution order.
 
-### Canonical Analogies
+### Structural Analogies
 - Sequential manufacturing or staged chemical preparation.
 - Fixed-route transit schedules where each stop must occur in sequence.
 
@@ -54,7 +54,7 @@ A   B   C   D
 Maximum scheduling flexibility.  
 All tasks are independent and may be completed in any order.
 
-### Canonical Analogies
+### Structural Analogies
 - Independent preprocessing jobs in distributed computing.
 - Completing a checklist or recording attendance.
 
@@ -80,7 +80,7 @@ A fork–join synchronization pattern.
 A single task branches into partially independent subtasks that later
 reconverge.
 
-### Canonical Analogies
+### Structural Analogies
 - Parallel analyses that must both complete before final aggregation.
 - Approval → parallel work → final report pipelines.
 
@@ -105,7 +105,7 @@ in multiple partially overlapping constraint paths. Unlike a diamond,
 dependencies do not cleanly diverge and reconverge, producing more entangled
 execution relationships.
 
-### Canonical Analogies
+### Structural Analogies
 - A required document or approval feeding multiple partially independent
   administrative chains.
 - A signoff process where B depends on both A and C, while C must also
@@ -138,7 +138,7 @@ Multiple upstream chains of unequal depth feed into a shared downstream
 constraint. These structures highlight how uneven dependency interactions
 influence traversal flexibility and ideal-growth behavior.
 
-### Canonical Analogies
+### Structural Analogies
 - Multi-stage approval processes where some prerequisite pipelines are
   substantially deeper than others.
 - Workflows where a final task depends on several pipelines of differing
@@ -168,11 +168,9 @@ influence traversal flexibility and ideal-growth behavior.
 ```
 
 ### Structural Meaning
-
 Crown posets form a height‑2 structure where each maximal element depends on all but one minimal element, creating a dense web of overlapping constraints. Their alternating exclusion pattern produces a highly symmetric, non‑hierarchical dependency shape that resists simple decomposition.
 
-### Canonical Analogies
-
+### Structural Analogies
 - Peer review systems where each reviewer may evaluate every submission
   except their own.
 
