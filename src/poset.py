@@ -1,6 +1,8 @@
 import queue
 from typing import Set, FrozenSet, List, Dict
 
+from matplotlib.style import available
+
 class Poset:
     def __init__(self, elements: Set[str], relations: List[tuple[str, str]]):
         self.elements: Set[str] = elements
@@ -20,29 +22,59 @@ class Poset:
             self.parents[v].add(u)
             self.global_in_degree[v] += 1
         self._check_for_cycles()
-
-    def _find_minimal_elements_in_subposet(self, subset: FrozenSet[str]) -> List[str]:
+        self.order = self.canonical_order()
         
-        minimal_elements = []
-        for node in subset:
-            # Optimization: If the node is a global minimal element (root source),
-            # it can never have a remaining parent prerequisite inside any subset.
-            if self.global_in_degree[node] == 0:
-                minimal_elements.append(node)
-                continue
-                
-            # Structural Verification: Check if any covered lower bound (parent node)
-            # is still present within our dual order ideal (active work pool).
-            is_minimal = True
-            for parent in self.parents[node]:
-                if parent in subset:
-                    is_minimal = False
-                    break  # Element is bounded below (blocked), terminate check
-            
-            if is_minimal:
-                minimal_elements.append(node)
-        return minimal_elements
+
+    def minimals(self) -> list[str]:
+        mins = [x for x in self.elements if len(self.parents[x]) == 0]
+        return sorted(mins)
+
+    def maximals(self) -> list[str]:
+        maxs = [x for x in self.elements if len(self.adj[x]) == 0]
+        return sorted(maxs)    
     
+    def parents_of(self, x: str) -> list[str]:
+        """Return parents of x in canonical order."""
+        return sorted(self.parents[x])
+
+    def children_of(self, x: str) -> list[str]:
+        """Return children of x in canonical order."""
+        return sorted(self.adj[x])
+
+    def minimals_in_subposet(self, subset: FrozenSet[str]) -> List[str]:
+        
+        mins = []
+        for x in subset:
+            if all(p not in subset for p in self.parents_of(x)):
+                mins.append(x)
+        return sorted(mins)
+    
+    def canonical_order(self) -> list[str]:
+        """Return a canonical topological ordering using lexicographic tie-breaking."""
+        # Copy in-degree so we don't mutate the global one
+        in_degree = {x: len(self.parents[x]) for x in self.elements}
+
+        # Start with all global minimal elements, sorted lexicographically
+        available = sorted([x for x in self.elements if in_degree[x] == 0])
+
+        order = []
+
+        while available:
+        # Pick the lexicographically smallest minimal element
+            x = available.pop(0)
+            order.append(x)
+
+        # Remove x from the graph
+            for child in self.children_of(x):
+                in_degree[child] -= 1
+                if in_degree[child] == 0:
+                # Insert child into the available list in sorted position
+                # (or append then sort — simpler and fine for now)
+                    available.append(child)
+                    available.sort()
+
+        return order
+
     def _check_for_cycles(self):
         in_degree = dict(self.global_in_degree)
         queue = [n for n, deg in in_degree.items() if deg == 0]
@@ -58,3 +90,4 @@ class Poset:
 
         if visited != len(self.elements):
             raise ValueError("Invalid poset: relations contain a cycle.")
+    
