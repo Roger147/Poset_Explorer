@@ -48,3 +48,7 @@ pytest
 ## Documentation
 
 See `docs/workflow_families.md` for canonical structural benchmark families and motivating examples.
+
+## License
+
+This project is licensed under the MIT License
