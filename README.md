@@ -1,7 +1,10 @@
 # Workflow Dependency Structure Analyzer
 
 A lightweight research framework for studying how dependency constraints shape the space of valid workflows.  
-Workflows are modeled as partially ordered sets (posets/DAGs), and the project focuses on the combinatorial structure of their linear extensions and order ideals.
+Workflows are modeled as partially ordered sets (posets and DAGs), and the project focuses on the combinatorial structure of their linear extensions and order ideals.
+
+> This project is currently an exploratory research-oriented
+> implementation under active development.
 
 ## Current Capabilities
 
@@ -51,4 +54,4 @@ See `docs/workflow_families.md` for canonical structural benchmark families and 
 
 ## License
 
-This project is licensed under the MIT License
+This project is licensed under the MIT License - see the `LICENSE` file for details
