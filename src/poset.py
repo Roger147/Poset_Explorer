@@ -33,11 +33,11 @@ class Poset:
     
     def parents_of(self, x: str) -> list[str]:
         """Return parents of x in canonical order."""
-        return sorted(self.parents[x])
+        return [parent for parent in self.order if parent in self.parents[x]]
 
     def children_of(self, x: str) -> list[str]:
         """Return children of x in canonical order."""
-        return sorted(self.adj[x])
+        return [child for child in self.order if child in self.adj[x]]
 
     def minimals_in_subposet(self, subset: FrozenSet[str]) -> List[str]:
         
@@ -62,7 +62,7 @@ class Poset:
             order.append(x)
 
         # Remove x from the graph
-            for child in self.children_of(x):
+            for child in sorted(self.adj[x]):
                 in_degree[child] -= 1
                 if in_degree[child] == 0:
                     available.append(child)

@@ -35,3 +35,19 @@ def test_basic_poset():
     minimal = poset.minimals_in_subposet(subsetup)
 
     assert set(minimal) == {"B", "C"}
+
+
+def test_parent_and_child_accessors_use_canonical_order():
+    elements = {"M", "Z", "A", "B"}
+
+    relations = [
+        ("M", "A"),
+        ("M", "B"),
+        ("Z", "A"),
+    ]
+
+    poset = Poset(elements, relations)
+
+    assert poset.order == ["M", "B", "Z", "A"]
+    assert poset.children_of("M") == ["B", "A"]
+    assert poset.parents_of("A") == ["M", "Z"]
