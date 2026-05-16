@@ -178,3 +178,5 @@ Crown posets form a height‑2 structure where each maximal element depends on a
 - Non–series–parallel; canonical minimal example of a poset that cannot be decomposed into series or parallel components.
 - High symmetry; strong automorphism structure with uniform behavior across all indices.
 - Classical family; well‑studied benchmark object in combinatorics and extremal poset theory.
+
+## Boolean Lattices

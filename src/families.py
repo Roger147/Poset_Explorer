@@ -5,6 +5,8 @@ should live near these factories. Structural measurements should still be
 computed by analyzers from the resulting Poset so custom posets are comparable.
 """
 
+from itertools import combinations
+
 from poset import Poset
 
 
@@ -92,3 +94,32 @@ def crown(n: int) -> Poset:
         if i != j
     ]
     return Poset(set(lower + upper), relations)
+
+
+def boolean_lattice(n: int) -> Poset:
+    """Return the Boolean lattice B_n ordered by subset inclusion."""
+    if n < 0:
+        raise ValueError("Boolean lattice rank must be nonnegative.")
+
+    coordinates = list(range(1, n + 1))
+    subsets = [
+        frozenset(combo)
+        for size in range(n + 1)
+        for combo in combinations(coordinates, size)
+    ]
+    labels = {subset: _subset_label(subset) for subset in subsets}
+    relations: list[tuple[str, str]] = []
+
+    for subset in subsets:
+        for coordinate in coordinates:
+            if coordinate not in subset:
+                superset = frozenset(set(subset) | {coordinate})
+                relations.append((labels[subset], labels[superset]))
+
+    return Poset(set(labels.values()), relations)
+
+
+def _subset_label(subset: frozenset[int]) -> str:
+    if not subset:
+        return "{}"
+    return "{" + ", ".join(str(x) for x in sorted(subset)) + "}"

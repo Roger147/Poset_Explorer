@@ -1,6 +1,14 @@
 import pytest
 
-from families import antichain, asymmetric_convergence, chain, crown, diamond, n_poset
+from families import (
+    antichain,
+    asymmetric_convergence,
+    boolean_lattice,
+    chain,
+    crown,
+    diamond,
+    n_poset,
+)
 
 
 def test_chain_factory_builds_cover_relations():
@@ -68,3 +76,26 @@ def test_crown_factory_builds_height_two_exclusion_pattern():
 def test_crown_rejects_too_few_pairs():
     with pytest.raises(ValueError):
         crown(2)
+
+
+def test_boolean_lattice_factory_builds_subset_cover_relations():
+    poset = boolean_lattice(2)
+
+    assert poset.elements == {"{}", "{1}", "{2}", "{1, 2}"}
+    assert poset.minimals() == ["{}"]
+    assert poset.maximals() == ["{1, 2}"]
+    assert set(poset.children_of("{}")) == {"{1}", "{2}"}
+    assert poset.parents_of("{1, 2}") == ["{1}", "{2}"]
+
+
+def test_boolean_lattice_rank_zero_has_single_empty_subset():
+    poset = boolean_lattice(0)
+
+    assert poset.elements == {"{}"}
+    assert poset.minimals() == ["{}"]
+    assert poset.maximals() == ["{}"]
+
+
+def test_boolean_lattice_rejects_negative_rank():
+    with pytest.raises(ValueError):
+        boolean_lattice(-1)
