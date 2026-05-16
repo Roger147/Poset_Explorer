@@ -22,6 +22,9 @@ directed acyclic graphs (DAGs).
 - **Order-ideal traversal and lattice-layer analysis**  
   Groups ideals by rank to visualize the structure of the distributive lattice J(P).
 
+- **Mobius function and inversion utilities**  
+  Computes interval Mobius values and supports zeta transforms with Mobius inversion.
+
 ## Research Focus
 
 Current work centers on:
@@ -29,6 +32,7 @@ Current work centers on:
 - exact linear-extension counting,
 - traversal of order ideals,
 - lattice-layer analysis,
+- Mobius inversion and incidence-style poset invariants,
 - structural memoization strategies for repeated subproblems,
 - and exploring canonical workflow families.
 

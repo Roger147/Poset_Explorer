@@ -77,3 +77,61 @@ def test_width_uses_transitive_comparability_not_only_cover_relations():
         ("x2", "x3"),
     ]
     assert analyzer.width() == 1
+
+
+def test_comparable_successors_reuse_transitive_closure_cache():
+    analyzer = PosetAnalyzer(chain(3))
+
+    assert analyzer.comparable_successors("x1") == ["x2", "x3"]
+    assert analyzer.comparable_successors("x1") == ["x2", "x3"]
+    assert analyzer.is_less_equal("x1", "x3")
+
+
+def test_chain_mobius_values_use_closed_intervals():
+    analyzer = PosetAnalyzer(chain(3))
+
+    assert analyzer.mobius("x1", "x1") == 1
+    assert analyzer.mobius("x1", "x2") == -1
+    assert analyzer.mobius("x2", "x3") == -1
+    assert analyzer.mobius("x1", "x3") == 0
+    assert analyzer.mobius("x3", "x1") == 0
+
+
+def test_diamond_mobius_values_include_branch_reconvergence():
+    analyzer = PosetAnalyzer(diamond())
+
+    assert analyzer.interval("A", "D") == ["A", "B", "C", "D"]
+    assert analyzer.mobius("A", "B") == -1
+    assert analyzer.mobius("A", "C") == -1
+    assert analyzer.mobius("B", "D") == -1
+    assert analyzer.mobius("C", "D") == -1
+    assert analyzer.mobius("A", "D") == 1
+    assert analyzer.mobius("B", "C") == 0
+
+
+def test_mobius_matrix_reports_every_ordered_pair():
+    matrix = PosetAnalyzer(chain(2)).mobius_matrix()
+
+    assert matrix == {
+        ("x1", "x1"): 1,
+        ("x1", "x2"): -1,
+        ("x2", "x1"): 0,
+        ("x2", "x2"): 1,
+    }
+
+
+def test_zeta_transform_and_mobius_inversion_round_trip():
+    analyzer = PosetAnalyzer(diamond())
+    values = {"A": 2, "B": 3, "C": 5, "D": 7}
+
+    transformed = analyzer.zeta_transform(values)
+
+    assert transformed == {"A": 2, "B": 5, "C": 7, "D": 17}
+    assert analyzer.mobius_inversion(transformed) == values
+
+
+def test_mobius_transforms_require_values_for_all_elements():
+    analyzer = PosetAnalyzer(diamond())
+
+    with pytest.raises(KeyError):
+        analyzer.zeta_transform({"A": 1})

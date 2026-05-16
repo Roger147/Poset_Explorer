@@ -1,5 +1,5 @@
 from collections import defaultdict
-from typing import Any, Dict, FrozenSet
+from typing import Any, Dict, FrozenSet, Mapping
 
 from ideal import Ideal
 
@@ -8,6 +8,7 @@ class PosetAnalyzer:
 
     def __init__(self, poset):
         self.poset = poset
+        self._successor_closure: dict[str, set[str]] | None = None
 
     def count_linear_extensions(self) -> int:
         """
@@ -69,17 +70,9 @@ class PosetAnalyzer:
 
     def comparable_successors(self, x: str) -> list[str]:
         """Return all elements greater than x, in canonical order."""
-        seen: set[str] = set()
-        stack = list(self.poset.children_of(x))
-
-        while stack:
-            y = stack.pop()
-            if y in seen:
-                continue
-            seen.add(y)
-            stack.extend(self.poset.children_of(y))
-
-        return [y for y in self.poset.order if y in seen]
+        self._validate_element(x)
+        closure = self._transitive_successor_closure()
+        return [y for y in self.poset.order if y in closure[x]]
 
     def comparability_edges(self) -> list[tuple[str, str]]:
         """Return all strict comparability pairs x < y."""
@@ -87,6 +80,97 @@ class PosetAnalyzer:
         for x in self.poset.order:
             edges.extend((x, y) for y in self.comparable_successors(x))
         return edges
+
+    def is_less_equal(self, x: str, y: str) -> bool:
+        """Return whether x <= y in the transitive order."""
+        self._validate_element(x)
+        self._validate_element(y)
+        closure = self._transitive_successor_closure()
+        return x == y or y in closure[x]
+
+    def interval(self, x: str, y: str) -> list[str]:
+        """Return the closed interval [x, y] in canonical order."""
+        self._validate_element(x)
+        self._validate_element(y)
+        if not self.is_less_equal(x, y):
+            return []
+
+        return [
+            z for z in self.poset.order
+            if self.is_less_equal(x, z) and self.is_less_equal(z, y)
+        ]
+
+    def mobius(self, x: str, y: str) -> int:
+        """
+        Return the Mobius function value mu(x, y) of the poset.
+
+        Values are computed from the recurrence:
+        mu(x, x) = 1 and mu(x, y) = -sum(mu(x, z) for x <= z < y).
+        Incomparable pairs have value 0.
+        """
+        self._validate_element(x)
+        self._validate_element(y)
+
+        if not self.is_less_equal(x, y):
+            return 0
+
+        memo: dict[tuple[str, str], int] = {}
+
+        def compute(left: str, right: str) -> int:
+            if left == right:
+                return 1
+
+            key = (left, right)
+            if key in memo:
+                return memo[key]
+
+            total = 0
+            for z in self.interval(left, right):
+                if z != right:
+                    total += compute(left, z)
+
+            memo[key] = -total
+            return memo[key]
+
+        return compute(x, y)
+
+    def mobius_matrix(self) -> dict[tuple[str, str], int]:
+        """Return mu(x, y) for every ordered pair of elements."""
+        return {
+            (x, y): self.mobius(x, y)
+            for x in self.poset.order
+            for y in self.poset.order
+        }
+
+    def zeta_transform(
+        self,
+        values: Mapping[str, int | float],
+    ) -> dict[str, int | float]:
+        """
+        Return g(y) = sum_{x <= y} f(x) for element-indexed values f.
+        """
+        self._validate_value_keys(values)
+        return {
+            y: sum(
+                values[x]
+                for x in self.poset.order
+                if self.is_less_equal(x, y)
+            )
+            for y in self.poset.order
+        }
+
+    def mobius_inversion(
+        self,
+        values: Mapping[str, int | float],
+    ) -> dict[str, int | float]:
+        """
+        Invert a zeta transform: f(y) = sum_{x <= y} mu(x, y) g(x).
+        """
+        self._validate_value_keys(values)
+        return {
+            y: sum(self.mobius(x, y) * values[x] for x in self.poset.order)
+            for y in self.poset.order
+        }
 
     def width(self) -> int:
         """
@@ -120,6 +204,29 @@ class PosetAnalyzer:
                 matching_size += 1
 
         return self.num_elements() - matching_size
+
+    def _validate_element(self, x: str) -> None:
+        if x not in self.poset.elements:
+            raise KeyError(f"Unknown poset element: {x}")
+
+    def _validate_value_keys(self, values: Mapping[str, int | float]) -> None:
+        missing = self.poset.elements - set(values)
+        if missing:
+            ordered_missing = [x for x in self.poset.order if x in missing]
+            raise KeyError(f"Missing values for poset elements: {ordered_missing}")
+
+    def _transitive_successor_closure(self) -> dict[str, set[str]]:
+        if self._successor_closure is None:
+            closure: dict[str, set[str]] = {x: set() for x in self.poset.order}
+
+            for x in reversed(self.poset.order):
+                for child in self.poset.children_of(x):
+                    closure[x].add(child)
+                    closure[x].update(closure[child])
+
+            self._successor_closure = closure
+
+        return self._successor_closure
 
     def get_lattice_layers(self):
         """
