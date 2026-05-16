@@ -1,4 +1,4 @@
-from collections import defaultdict
+from collections import Counter, defaultdict
 from typing import Any, Dict, FrozenSet, Mapping
 
 from ideal import Ideal
@@ -100,6 +100,41 @@ class PosetAnalyzer:
             if self.is_less_equal(x, z) and self.is_less_equal(z, y)
         ]
 
+    def interval_summary(self) -> dict[str, Any]:
+        """
+        Return compact statistics over all closed intervals [x, y].
+
+        This summarizes the bounded local subposets without materializing a
+        large interval table in the public result.
+        """
+        interval_sizes = [
+            len(self.interval(x, y))
+            for x, y in self._interval_pairs()
+        ]
+
+        if not interval_sizes:
+            return {
+                "num_intervals": 0,
+                "num_trivial_intervals": 0,
+                "num_nontrivial_intervals": 0,
+                "num_cover_intervals": 0,
+                "min_interval_size": 0,
+                "max_interval_size": 0,
+                "mean_interval_size": 0,
+                "interval_size_histogram": {},
+            }
+
+        return {
+            "num_intervals": len(interval_sizes),
+            "num_trivial_intervals": sum(size == 1 for size in interval_sizes),
+            "num_nontrivial_intervals": sum(size > 1 for size in interval_sizes),
+            "num_cover_intervals": sum(size == 2 for size in interval_sizes),
+            "min_interval_size": min(interval_sizes),
+            "max_interval_size": max(interval_sizes),
+            "mean_interval_size": sum(interval_sizes) / len(interval_sizes),
+            "interval_size_histogram": self._histogram(interval_sizes),
+        }
+
     def mobius(self, x: str, y: str) -> int:
         """
         Return the Mobius function value mu(x, y) of the poset.
@@ -140,6 +175,57 @@ class PosetAnalyzer:
             (x, y): self.mobius(x, y)
             for x in self.poset.order
             for y in self.poset.order
+        }
+
+    def mobius_summary(self) -> dict[str, Any]:
+        """
+        Return compact Mobius statistics over comparable intervals.
+
+        The full Mobius matrix is intentionally exposed only through
+        mobius_matrix(), because it grows quadratically with the poset size.
+        """
+        values = [
+            self.mobius(x, y)
+            for x, y in self._interval_pairs()
+        ]
+        abs_values = [abs(value) for value in values]
+        ranks = self._rank_levels_if_ranked()
+        by_rank_distance: dict[int, list[int]] = defaultdict(list)
+
+        if ranks is not None:
+            for x, y in self._interval_pairs():
+                by_rank_distance[ranks[y] - ranks[x]].append(self.mobius(x, y))
+
+        if not values:
+            return {
+                "num_mobius_values": 0,
+                "mobius_zero_count": 0,
+                "mobius_nonzero_count": 0,
+                "mobius_positive_count": 0,
+                "mobius_negative_count": 0,
+                "mobius_min": 0,
+                "mobius_max": 0,
+                "mobius_abs_sum": 0,
+                "mobius_value_histogram": {},
+                "is_ranked": ranks is not None,
+                "mobius_value_histogram_by_rank_distance": {},
+            }
+
+        return {
+            "num_mobius_values": len(values),
+            "mobius_zero_count": sum(value == 0 for value in values),
+            "mobius_nonzero_count": sum(value != 0 for value in values),
+            "mobius_positive_count": sum(value > 0 for value in values),
+            "mobius_negative_count": sum(value < 0 for value in values),
+            "mobius_min": min(values),
+            "mobius_max": max(values),
+            "mobius_abs_sum": sum(abs_values),
+            "mobius_value_histogram": self._histogram(values),
+            "is_ranked": ranks is not None,
+            "mobius_value_histogram_by_rank_distance": {
+                distance: self._histogram(by_rank_distance[distance])
+                for distance in sorted(by_rank_distance)
+            },
         }
 
     def zeta_transform(
@@ -227,6 +313,35 @@ class PosetAnalyzer:
             self._successor_closure = closure
 
         return self._successor_closure
+
+    def _interval_pairs(self) -> list[tuple[str, str]]:
+        return [
+            (x, y)
+            for x in self.poset.order
+            for y in self.poset.order
+            if self.is_less_equal(x, y)
+        ]
+
+    def _rank_levels_if_ranked(self) -> dict[str, int] | None:
+        ranks: dict[str, int] = {}
+
+        for x in self.poset.order:
+            parents = self.poset.parents_of(x)
+            if not parents:
+                ranks[x] = 0
+                continue
+
+            parent_ranks = {ranks[parent] for parent in parents}
+            if len(parent_ranks) != 1:
+                return None
+
+            ranks[x] = parent_ranks.pop() + 1
+
+        return ranks
+
+    def _histogram(self, values: list[int]) -> dict[int, int]:
+        counts = Counter(values)
+        return {value: counts[value] for value in sorted(counts)}
 
     def get_lattice_layers(self):
         """

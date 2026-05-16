@@ -25,6 +25,9 @@ directed acyclic graphs (DAGs).
 - **Mobius function and inversion utilities**  
   Computes interval Mobius values and supports zeta transforms with Mobius inversion.
 
+- **Compact interval and Mobius summaries**  
+  Reports aggregate interval and Mobius statistics without returning full matrices by default.
+
 ## Research Focus
 
 Current work centers on:

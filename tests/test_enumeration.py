@@ -48,6 +48,14 @@ def test_diamond_summary_reports_structural_measurements():
     }
 
 
+def test_structural_summary_keeps_large_mobius_objects_explicit():
+    summary = PosetAnalyzer(diamond()).summary()
+
+    assert "mobius_matrix" not in summary
+    assert "mobius_summary" not in summary
+    assert "interval_summary" not in summary
+
+
 def test_basic_family_heights():
     assert PosetAnalyzer(chain(4)).height() == 4
     assert PosetAnalyzer(antichain(4)).height() == 1
@@ -109,6 +117,21 @@ def test_diamond_mobius_values_include_branch_reconvergence():
     assert analyzer.mobius("B", "C") == 0
 
 
+def test_diamond_interval_summary_reports_compact_interval_features():
+    summary = PosetAnalyzer(diamond()).interval_summary()
+
+    assert summary == {
+        "num_intervals": 9,
+        "num_trivial_intervals": 4,
+        "num_nontrivial_intervals": 5,
+        "num_cover_intervals": 4,
+        "min_interval_size": 1,
+        "max_interval_size": 4,
+        "mean_interval_size": pytest.approx(16 / 9),
+        "interval_size_histogram": {1: 4, 2: 4, 4: 1},
+    }
+
+
 def test_mobius_matrix_reports_every_ordered_pair():
     matrix = PosetAnalyzer(chain(2)).mobius_matrix()
 
@@ -118,6 +141,35 @@ def test_mobius_matrix_reports_every_ordered_pair():
         ("x2", "x1"): 0,
         ("x2", "x2"): 1,
     }
+
+
+def test_mobius_summary_reports_compact_mobius_features():
+    summary = PosetAnalyzer(diamond()).mobius_summary()
+
+    assert summary == {
+        "num_mobius_values": 9,
+        "mobius_zero_count": 0,
+        "mobius_nonzero_count": 9,
+        "mobius_positive_count": 5,
+        "mobius_negative_count": 4,
+        "mobius_min": -1,
+        "mobius_max": 1,
+        "mobius_abs_sum": 9,
+        "mobius_value_histogram": {-1: 4, 1: 5},
+        "is_ranked": True,
+        "mobius_value_histogram_by_rank_distance": {
+            0: {1: 4},
+            1: {-1: 4},
+            2: {1: 1},
+        },
+    }
+
+
+def test_mobius_summary_omits_rank_distance_histogram_for_non_ranked_posets():
+    summary = PosetAnalyzer(asymmetric_convergence([1, 3])).mobius_summary()
+
+    assert summary["is_ranked"] is False
+    assert summary["mobius_value_histogram_by_rank_distance"] == {}
 
 
 def test_zeta_transform_and_mobius_inversion_round_trip():
