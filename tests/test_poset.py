@@ -1,23 +1,9 @@
-import sys
-from pathlib import Path
-
-import poset
-
-sys.path.append(str(Path(__file__).resolve().parents[1] / "src"))
-
+from families import diamond
 from poset import Poset
 
-def test_basic_poset():
-    elements = { "A","B","C","D"}
 
-    relations = [
-    ("A", "B"),
-    ("A", "C"),
-    ("B", "D"),
-    ("C", "D")
-]
-
-    poset = Poset(elements, relations)
+def test_diamond_structure_and_minimals():
+    poset = diamond()
 
     assert poset.adj["A"] == {"B", "C"}
     assert poset.parents["D"] == {"B", "C"}
