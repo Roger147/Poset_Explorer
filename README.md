@@ -37,6 +37,24 @@ All algorithms are reconstructed through first principles, then sent to AI to sp
 - **Compact interval and Mobius summaries**  
   Reports aggregate interval and Mobius statistics without returning full matrices by default.
 
+## Example Summary
+
+For the Boolean lattice `B_2`, `PosetAnalyzer.summary()` returns:
+
+```python
+{
+    "num_elements": 4,
+    "num_relations": 4,
+    "num_minimals": 1,
+    "num_maximals": 1,
+    "height": 3,
+    "width": 2,
+    "num_linear_extensions": 2,
+    "num_ideals": 6,
+    "lattice_layer_sizes": [1, 1, 2, 1, 1],
+}
+```
+
 ## Research Focus
 
 Current work centers on:
