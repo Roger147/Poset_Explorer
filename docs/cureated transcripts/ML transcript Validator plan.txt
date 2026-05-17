@@ -1,0 +1,69 @@
+Potential idea for ML splitting?
+Quote by Codex:
+
+Yes. For enumeration, the split is only useful if it preserves a valid counting
+  relationship. Otherwise it may identify an interesting “region,” but not one
+  you can safely shortcut.
+
+  The key distinction is:
+
+  structural region detection != valid enumeration factorization
+
+  For exact shortcuts, you want splits with a theorem behind them.
+
+  Some useful cases to study:
+
+  - Disjoint union / parallel composition
+    If P = A + B with no relations between A and B, then:
+
+    e(P) = binomial(|A| + |B|, |A|) * e(A) * e(B)
+
+    More generally for several components, use a multinomial factor.
+
+  - Ordinal sum / series composition
+    If every element of A is below every element of B, then:
+
+    e(P) = e(A) * e(B)
+
+    No interleaving is allowed.
+
+  - Articulation / separator-style decompositions
+    More delicate. A separator might reduce the problem, but it does not
+    automatically factor. You usually need to condition on where separator
+    elements appear in the linear extension.
+  - Rank or layer cuts
+    A rank boundary can look natural, but may not factor unless all cross-
+    relations force a clean before/after relationship.
+  - Family-recognized subposets
+    This is where your family factories become useful: if a detected subposet
+    matches a known family, you may apply a known formula or optimized routine.
+    But you still need to understand how that subposet interacts with the rest of
+    the poset.
+
+  A good future architecture might be:
+
+  Detector:
+      proposes candidate regions / boundaries
+
+  Classifier:
+      identifies whether a region resembles chain, antichain, diamond, Boolean
+  lattice, crown, etc.
+
+  Validator:
+      checks whether the proposed split supports an exact enumeration rule
+
+  Enumerator:
+      applies shortcut only if validator certifies it
+
+  That keeps heuristic discovery separate from exact counting logic.
+
+  For your current codebase, the conservative path would be:
+
+  1. Add exact decomposition checks first: connected components, ordinal sums,
+     maybe series-parallel later.
+  2. Add family recognizers second.
+  3. Add heuristic boundary detection only after there are validators to accept/
+     reject proposed cuts.
+
+  That ordering will keep the math honest while still leaving room for
+  experimental discovery.
