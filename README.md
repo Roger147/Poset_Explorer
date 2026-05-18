@@ -45,7 +45,7 @@ All algorithms are reconstructed through first principles, then sent to AI to sp
 The following creates a Boolean Lattice $B_2$ and runs the main analyzer summary.
 
 ```python
-from enumeration import PosetAnalyzer
+from analysis import PosetAnalyzer
 from families import boolean_lattice
 
 

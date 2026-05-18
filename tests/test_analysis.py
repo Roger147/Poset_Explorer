@@ -1,6 +1,6 @@
 import pytest
 
-from enumeration import PosetAnalyzer
+from analysis import PosetAnalyzer
 from families import antichain, asymmetric_convergence, chain, crown, diamond, n_poset
 from ideal import Ideal 
 

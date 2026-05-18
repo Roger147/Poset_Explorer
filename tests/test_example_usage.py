@@ -1,4 +1,4 @@
-from enumeration import PosetAnalyzer
+from analysis import PosetAnalyzer
 from families import boolean_lattice
 from ideal import Ideal
 
