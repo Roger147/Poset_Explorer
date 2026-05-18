@@ -37,6 +37,9 @@ All algorithms are reconstructed through first principles, then sent to AI to sp
 - **Compact interval and Mobius summaries**  
   Reports aggregate interval and Mobius statistics without returning full matrices by default.
 
+- **Weighted poset wrappers**  
+  Attaches element and cover-edge weights without modifying the underlying poset.
+
 ## Example Summary
 
 For the Boolean lattice `B_2`, `PosetAnalyzer.summary()` returns:
