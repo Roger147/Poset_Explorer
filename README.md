@@ -26,10 +26,10 @@ All algorithms are reconstructed through first principles, then sent to AI to sp
   Built-in constructors for well-known benchmark poset families
 
 - **Exact linear-extension enumeration**  
-  Memoized recursion over dual order ideals (O(2^n) worst-case).
+  Memoized recursion over dual order ideals $\mathcal{O}(2^n)$ worst-case).
 
 - **Order-ideal traversal and lattice-layer analysis**  
-  Groups ideals by rank to visualize the structure of the distributive lattice J(P).
+  Groups ideals by rank to visualize the structure of the distributive lattice $J(P)$.
 
 - **Mobius function and inversion utilities**  
   Computes interval Mobius values and supports zeta transforms with Mobius inversion.
@@ -42,7 +42,7 @@ All algorithms are reconstructed through first principles, then sent to AI to sp
 
 ## Example Summary
 
-The following creates a Boolean Lattice `B_2` and runs the main analyzer summary.
+The following creates a Boolean Lattice $B_2$ and runs the main analyzer summary.
 
 ```python
 from enumeration import PosetAnalyzer
@@ -54,7 +54,7 @@ analyzer = PosetAnalyzer(poset)
 
 summary = analyzer.summary()
 ```    
-For the Boolean lattice `B_2`, `PosetAnalyzer.summary()` returns:
+For the Boolean lattice $B_2$, `PosetAnalyzer.summary()` returns:
 
 ```python
 {
