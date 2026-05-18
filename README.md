@@ -42,6 +42,20 @@ All algorithms are reconstructed through first principles, then sent to AI to sp
 
 ## Example Summary
 
+The following creates a Boolean Lattice `B_2` and runs the main analyzer summary.
+
+```python
+from enumeration import PosetAnalyzer
+from families import boolean_lattice
+from ideal import Ideal
+
+
+def test_example_boolean_lattice_analysis_usage():
+    poset = boolean_lattice(2)
+    analyzer = PosetAnalyzer(poset)
+
+    summary = analyzer.summary()
+```    
 For the Boolean lattice `B_2`, `PosetAnalyzer.summary()` returns:
 
 ```python
@@ -57,6 +71,8 @@ For the Boolean lattice `B_2`, `PosetAnalyzer.summary()` returns:
     "lattice_layer_sizes": [1, 1, 2, 1, 1],
 }
 ```
+
+See `test_example_usage.py` for the full suite.
 
 ## Research Focus
 
