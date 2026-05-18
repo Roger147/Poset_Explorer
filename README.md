@@ -47,14 +47,12 @@ The following creates a Boolean Lattice `B_2` and runs the main analyzer summary
 ```python
 from enumeration import PosetAnalyzer
 from families import boolean_lattice
-from ideal import Ideal
 
 
-def test_example_boolean_lattice_analysis_usage():
-    poset = boolean_lattice(2)
-    analyzer = PosetAnalyzer(poset)
+poset = boolean_lattice(2)
+analyzer = PosetAnalyzer(poset)
 
-    summary = analyzer.summary()
+summary = analyzer.summary()
 ```    
 For the Boolean lattice `B_2`, `PosetAnalyzer.summary()` returns:
 
@@ -95,6 +93,7 @@ pytest
 ## Documentation
 
 See `docs/workflow_families.md` for canonical structural benchmark families and motivating examples.
+
 See `docs/logs` for session summaries and `docs/transcripts` for raw curated transcripts of sessions. 
 
 ## License
