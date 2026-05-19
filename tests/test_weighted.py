@@ -1,7 +1,8 @@
 import pytest
 
 from families import chain, diamond
-from weighted import WeightedPoset
+from ideal import Ideal
+from weighted import WeightedPoset, WeightedPosetAnalyzer
 
 
 def test_weighted_poset_stores_sparse_element_and_edge_weights():
@@ -83,3 +84,95 @@ def test_weighted_poset_rejects_unknown_element_and_edge_keys():
 
     with pytest.raises(KeyError):
         WeightedPoset(poset).edge_weight("x1", "missing")
+
+
+def test_weighted_analyzer_max_chain_weight_defaults_to_element_weights():
+    weighted = WeightedPoset(
+        diamond(),
+        element_weights={"A": 3, "B": 10, "C": 1, "D": 5},
+        edge_weights={
+            ("A", "B"): 100,
+            ("A", "C"): 1,
+            ("B", "D"): 1,
+            ("C", "D"): 100,
+        },
+    )
+
+    analyzer = WeightedPosetAnalyzer(weighted)
+
+    assert analyzer.max_chain_weight() == 18
+
+
+def test_weighted_analyzer_max_chain_weight_supports_edge_and_combined_modes():
+    weighted = WeightedPoset(
+        diamond(),
+        element_weights={"A": 3, "B": 10, "C": 1, "D": 5},
+        edge_weights={
+            ("A", "B"): 100,
+            ("A", "C"): 1,
+            ("B", "D"): 1,
+            ("C", "D"): 100,
+        },
+    )
+
+    analyzer = WeightedPosetAnalyzer(weighted)
+
+    assert analyzer.max_chain_weight(mode="edges") == 101
+    assert analyzer.max_chain_weight(mode="both") == 119
+
+
+def test_weighted_analyzer_rejects_unknown_chain_weight_mode():
+    analyzer = WeightedPosetAnalyzer(WeightedPoset.from_element_function(chain(1), lambda element: 1))
+
+    with pytest.raises(ValueError):
+        analyzer.max_chain_weight(mode="unknown")
+
+
+def test_weighted_analyzer_reuses_base_lattice_layers_for_ideal_weights():
+    weighted = WeightedPoset(
+        diamond(),
+        element_weights={"A": 1, "B": 2, "C": 4, "D": 8},
+    )
+
+    analyzer = WeightedPosetAnalyzer(weighted)
+    layers = analyzer.get_lattice_layers()
+
+    assert layers is analyzer.get_lattice_layers()
+    assert analyzer.ideal_weight(Ideal({"A", "C"})) == 5
+    assert analyzer.weighted_lattice_layer_summary() == {
+        0: {
+            "num_ideals": 1,
+            "min_ideal_weight": 0,
+            "max_ideal_weight": 0,
+            "mean_ideal_weight": 0,
+            "ideal_weight_histogram": {0: 1},
+        },
+        1: {
+            "num_ideals": 1,
+            "min_ideal_weight": 1,
+            "max_ideal_weight": 1,
+            "mean_ideal_weight": 1,
+            "ideal_weight_histogram": {1: 1},
+        },
+        2: {
+            "num_ideals": 2,
+            "min_ideal_weight": 3,
+            "max_ideal_weight": 5,
+            "mean_ideal_weight": 4,
+            "ideal_weight_histogram": {3: 1, 5: 1},
+        },
+        3: {
+            "num_ideals": 1,
+            "min_ideal_weight": 7,
+            "max_ideal_weight": 7,
+            "mean_ideal_weight": 7,
+            "ideal_weight_histogram": {7: 1},
+        },
+        4: {
+            "num_ideals": 1,
+            "min_ideal_weight": 15,
+            "max_ideal_weight": 15,
+            "mean_ideal_weight": 15,
+            "ideal_weight_histogram": {15: 1},
+        },
+    }
