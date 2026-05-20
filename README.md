@@ -4,18 +4,14 @@ A lightweight exploratory framework for studying finite partially
 ordered sets (posets), dependency structures, and their combinatorial
 behavior.
 
-The project focuses on linear extensions, order ideals, workflow
-families, and traversal structure in constrained systems modeled as
-directed acyclic graphs (DAGs). 
+Dependencies naturally occur in many contexts: tasks that must wait for others to finish before they begin or pre-requisites that must be satisfied before work can continue. These constraints can create bottlenecks by limiting what is available when. 
+
+These dependencies can be represented mathematically using partially ordered sets, shortened to posets. Posets are collections where individual items can be ordered relative to each other but not enough to reduce the entire system to a single clean ordering. Posets can be represented as directed acyclic graphs, which lets us study these dependencies using combinatorial and graph-theoretical methods. 
+
+This library focuses on exploring finite posets through dependency analysis, linear-extension enumeration, order-ideal traversal, and related methods. From there, related structures such as incidence algebras and residual graphs emerge naturally, exposing new perspectives on the underlying posets.
 
 > This project is currently an exploratory research-oriented
 > implementation under active development.
-
-## Purpose, AI use & Conceptual ownership
-
-This project doubles as a self-apprenticeship in algorithmic thinking, software architecture, and best practices. This project is also being used to test how well I can leverage AI's strengths without losing cognitive agency.
-
-All algorithms are reconstructed through first principles, then sent to AI to speed up cross-checking against known and verified algorithms, and help provide both formal vocabulary and relevant literature. Mathematical reasoning originates from my own understanding, and final architectural decisions are done by me. 
 
 ## Current Capabilities
 
@@ -90,6 +86,13 @@ Activate the virtual environment and run:
 ```
 pytest
 ```
+
+## Development Philosophy
+
+This project doubles as a self-apprenticeship in algorithmic thinking, software architecture, and best practices. This project is also being used to test how well I can leverage AI's strengths without losing cognitive agency.
+
+All algorithms are reconstructed through first principles, then sent to AI to speed up cross-checking against known and verified algorithms, and help provide both formal vocabulary and relevant literature. Mathematical reasoning originates from my own understanding, and final architectural decisions are done by me. 
+
 ## Documentation
 
 See `docs/workflow_families.md` for canonical structural benchmark families and motivating examples.
