@@ -6,9 +6,9 @@ behavior.
 
 Dependencies naturally occur in many contexts: tasks that must wait for others to finish before they begin or pre-requisites that must be satisfied before work can continue. These constraints can create bottlenecks by limiting what is available when. 
 
-These dependencies can be represented mathematically using partially ordered sets, shortened to posets. Posets are collections where individual items can be ordered relative to each other but not enough to reduce the entire system to a single clean ordering. Posets can be represented as directed acyclic graphs, which lets us study these dependencies using combinatorial and graph-theoretical methods. 
+These dependencies can be represented mathematically using partially ordered sets, shortened to posets. Posets are collections where individual items can be ordered relative to each other, but not enough to reduce the entire system to a single clean ordering. Posets can be represented as directed acyclic graphs, which lets us study these dependencies using combinatorial and graph-theoretical methods. 
 
-This library focuses on exploring finite posets through dependency analysis, linear-extension enumeration, order-ideal traversal, and related methods. From there, related structures such as incidence algebras and residual graphs emerge naturally, exposing new perspectives on the underlying posets.
+This library focuses on exploring finite posets through dependency analysis, linear-extension enumeration, order-ideal traversal, and related combinatorial methods. From there, related structures such as incidence algebras and residual graphs emerge naturally, exposing new perspectives on the underlying posets.
 
 > This project is currently an exploratory research-oriented
 > implementation under active development.
