@@ -1,6 +1,6 @@
 import pytest
 
-from families import chain, diamond
+from families import antichain, chain, crown, diamond, n_poset
 from ideal import Ideal
 from weighted import WeightedPoset, WeightedPosetAnalyzer
 
@@ -128,6 +128,127 @@ def test_weighted_analyzer_rejects_unknown_chain_weight_mode():
         analyzer.max_chain_weight(mode="unknown")
 
 
+def test_max_chain_weight_rejects_negative_measurement_weights():
+    weighted = WeightedPoset(
+        diamond(),
+        element_weights={"A": 3, "B": -10, "C": 1, "D": 5},
+        edge_weights={
+            ("A", "B"): 100,
+            ("A", "C"): 1,
+            ("B", "D"): 1,
+            ("C", "D"): 100,
+        },
+    )
+
+    with pytest.raises(ValueError):
+        WeightedPosetAnalyzer(weighted).max_chain_weight()
+
+
+def test_max_chain_score_allows_negative_weights():
+    weighted = WeightedPoset(
+        diamond(),
+        element_weights={"A": 3, "B": -10, "C": 1, "D": 5},
+        edge_weights={
+            ("A", "B"): -100,
+            ("A", "C"): 1,
+            ("B", "D"): 1,
+            ("C", "D"): 100,
+        },
+    )
+
+    analyzer = WeightedPosetAnalyzer(weighted)
+
+    assert analyzer.max_chain_score() == 9
+    assert analyzer.max_chain_score(mode="edges") == 101
+    assert analyzer.max_chain_score(mode="both") == 110
+
+
+def test_max_chain_score_uses_nonempty_chain_when_elements_are_negative():
+    weighted = WeightedPoset(
+        chain(2),
+        element_weights={"x1": -5, "x2": -1},
+    )
+
+    assert WeightedPosetAnalyzer(weighted).max_chain_score() == -1
+
+
+@pytest.mark.parametrize(
+    ("poset", "expected_width"),
+    [
+        (chain(4), 1),
+        (antichain(4), 4),
+        (diamond(), 2),
+        (n_poset(), 2),
+        (crown(3), 3),
+    ],
+)
+def test_weighted_width_with_unit_weights_matches_structural_width(poset, expected_width):
+    weighted = WeightedPoset.from_element_function(poset, lambda element: 1)
+
+    assert WeightedPosetAnalyzer(weighted).weighted_width() == expected_width
+
+
+def test_weighted_width_returns_maximum_antichain_element_weight():
+    weighted = WeightedPoset(
+        diamond(),
+        element_weights={"A": 1, "B": 10, "C": 20, "D": 1},
+    )
+
+    assert WeightedPosetAnalyzer(weighted).weighted_width() == 30
+
+
+def test_weighted_width_uses_transitive_comparability():
+    weighted = WeightedPoset(
+        chain(3),
+        element_weights={"x1": 100, "x2": 1, "x3": 100},
+    )
+
+    assert WeightedPosetAnalyzer(weighted).weighted_width() == 100
+
+
+def test_weighted_width_ignores_edge_weights():
+    weighted = WeightedPoset(
+        diamond(),
+        element_weights={"A": 1, "B": 10, "C": 20, "D": 1},
+        edge_weights={
+            ("A", "B"): 1000,
+            ("A", "C"): 1000,
+            ("B", "D"): 1000,
+            ("C", "D"): 1000,
+        },
+    )
+
+    assert WeightedPosetAnalyzer(weighted).weighted_width() == 30
+
+
+def test_weighted_width_rejects_negative_element_weights():
+    weighted = WeightedPoset(
+        diamond(),
+        element_weights={"A": 1, "B": -1, "C": 2, "D": 1},
+    )
+
+    with pytest.raises(ValueError):
+        WeightedPosetAnalyzer(weighted).weighted_width()
+
+
+def test_max_antichain_score_allows_negative_element_scores():
+    weighted = WeightedPoset(
+        antichain(3),
+        element_weights={"x1": 10, "x2": -100, "x3": 10},
+    )
+
+    assert WeightedPosetAnalyzer(weighted).max_antichain_score() == 20
+
+
+def test_max_antichain_score_allows_empty_antichain():
+    weighted = WeightedPoset(
+        antichain(2),
+        element_weights={"x1": -10, "x2": -5},
+    )
+
+    assert WeightedPosetAnalyzer(weighted).max_antichain_score() == 0
+
+
 def test_weighted_analyzer_reuses_base_lattice_layers_for_ideal_weights():
     weighted = WeightedPoset(
         diamond(),
@@ -175,4 +296,32 @@ def test_weighted_analyzer_reuses_base_lattice_layers_for_ideal_weights():
             "mean_ideal_weight": 15,
             "ideal_weight_histogram": {15: 1},
         },
+    }
+
+
+def test_ideal_weight_rejects_negative_measurement_weights():
+    weighted = WeightedPoset(
+        diamond(),
+        element_weights={"A": 1, "B": -2, "C": 4, "D": 8},
+    )
+
+    with pytest.raises(ValueError):
+        WeightedPosetAnalyzer(weighted).ideal_weight(Ideal({"A", "B"}))
+
+
+def test_ideal_score_and_layer_score_summary_allow_negative_values():
+    weighted = WeightedPoset(
+        diamond(),
+        element_weights={"A": 1, "B": -2, "C": 4, "D": 8},
+    )
+
+    analyzer = WeightedPosetAnalyzer(weighted)
+
+    assert analyzer.ideal_score(Ideal({"A", "B"})) == -1
+    assert analyzer.weighted_lattice_layer_score_summary()[2] == {
+        "num_ideals": 2,
+        "min_ideal_score": -1,
+        "max_ideal_score": 5,
+        "mean_ideal_score": 2,
+        "ideal_score_histogram": {-1: 1, 5: 1},
     }

@@ -1,4 +1,4 @@
-from collections import Counter
+from collections import Counter, deque
 from collections.abc import Callable, Mapping
 
 from analysis import PosetAnalyzer
@@ -139,20 +139,37 @@ class WeightedPosetAnalyzer:
         self.poset = weighted_poset.poset
         self.base = PosetAnalyzer(self.poset)
         self._lattice_layers = None
-        self._ideal_weights = None
+        self._ideal_scores = None
 
     def max_chain_weight(self, mode: str = "elements") -> Number:
         """
-        Return the maximum chain weight.
+        Return the maximum nonnegative chain weight.
 
         Modes:
         - elements: sum element weights along the chain.
         - edges: sum stored cover-edge weights along the chain.
         - both: sum element weights and stored cover-edge weights.
+
+        This is a measurement-style weighted height. It requires every weight
+        used by the selected mode to be nonnegative. Use max_chain_score() for
+        signed optimization over chains.
+
+        The combined "both" mode is meaningful only when element and edge
+        weights are measured in the same units.
         """
-        valid_modes = {"elements", "edges", "both"}
-        if mode not in valid_modes:
-            raise ValueError(f"Unknown chain weight mode: {mode}")
+        self._validate_chain_weight_mode(mode)
+        self._validate_nonnegative_chain_weights(mode)
+        return self.max_chain_score(mode)
+
+    def max_chain_score(self, mode: str = "elements") -> Number:
+        """
+        Return the maximum signed chain score.
+
+        This uses the same chain accumulation rules as max_chain_weight(), but
+        allows negative weights. On a nonempty poset the optimized chain is
+        nonempty; in edge-only mode, a singleton chain has score 0.
+        """
+        self._validate_chain_weight_mode(mode)
 
         if not self.poset.elements:
             return 0
@@ -172,6 +189,62 @@ class WeightedPosetAnalyzer:
 
         return max(best_ending_at.values())
 
+    def weighted_width(self) -> Number:
+        """
+        Return the maximum total element weight of an antichain.
+
+        This is the element-weighted analogue of poset width. Edge weights are
+        ignored: antichains are selected sets of elements, so this measurement
+        only sums element weights. It requires nonnegative element weights. Use
+        max_antichain_score() for signed optimization over antichains.
+        """
+        element_weights = {
+            element: self.weighted_poset.element_weight(element)
+            for element in self.poset.order
+        }
+
+        if any(weight < 0 for weight in element_weights.values()):
+            raise ValueError("Weighted width requires nonnegative element weights.")
+
+        return self.max_antichain_score()
+
+    def max_antichain_score(self) -> Number:
+        """
+        Return the maximum signed score of an antichain.
+
+        Negative element scores are allowed. The empty antichain is allowed, so
+        the result is never below 0. Edge weights are ignored.
+        """
+        element_scores = {
+            element: self.weighted_poset.element_weight(element)
+            for element in self.poset.order
+        }
+
+        positive_scores = {
+            element: max(score, 0)
+            for element, score in element_scores.items()
+        }
+        total_weight = sum(positive_scores.values())
+        if not self.poset.elements:
+            return 0
+
+        source = ("source", "s")
+        sink = ("sink", "t")
+        infinite_capacity = total_weight + 1
+        capacities = {}
+
+        for element, weight in positive_scores.items():
+            left = ("out", element)
+            right = ("in", element)
+            capacities[(source, left)] = weight
+            capacities[(right, sink)] = weight
+
+            for successor in self.base.comparable_successors(element):
+                capacities[(left, ("in", successor))] = infinite_capacity
+
+        minimum_vertex_cover_weight = self._max_flow(capacities, source, sink)
+        return total_weight - minimum_vertex_cover_weight
+
     def get_lattice_layers(self):
         """Return base analyzer lattice layers, cached for reuse."""
         if self._lattice_layers is None:
@@ -179,24 +252,55 @@ class WeightedPosetAnalyzer:
         return self._lattice_layers
 
     def ideal_weight(self, ideal) -> Number:
-        """Return the sum of element weights in an order ideal."""
-        if self._ideal_weights is None:
-            self._ideal_weights = {}
+        """
+        Return the nonnegative total element weight of an order ideal.
 
-        if ideal not in self._ideal_weights:
-            self._ideal_weights[ideal] = sum(
+        This is a measurement-style ideal weight. It requires the elements in
+        the ideal to have nonnegative weights. Use ideal_score() for signed
+        totals over ideals.
+        """
+        for element in self.poset.order:
+            if element in ideal and self.weighted_poset.element_weight(element) < 0:
+                raise ValueError("Ideal weight requires nonnegative element weights.")
+
+        return self.ideal_score(ideal)
+
+    def ideal_score(self, ideal) -> Number:
+        """Return the signed total element score of an order ideal."""
+        if self._ideal_scores is None:
+            self._ideal_scores = {}
+
+        if ideal not in self._ideal_scores:
+            self._ideal_scores[ideal] = sum(
                 self.weighted_poset.element_weight(element)
                 for element in self.poset.order
                 if element in ideal
             )
 
-        return self._ideal_weights[ideal]
+        return self._ideal_scores[ideal]
 
     def weighted_lattice_layer_summary(self) -> dict:
-        """Return compact ideal-weight summaries grouped by lattice layer."""
+        """
+        Return compact nonnegative ideal-weight summaries by lattice layer.
+
+        This uses ideal_weight(), so negative element weights are rejected when
+        they appear in an ideal. Use weighted_lattice_layer_score_summary() for
+        signed summaries.
+        """
         layers = self.get_lattice_layers()
         return {
             layer: self._weight_summary([self.ideal_weight(ideal) for ideal in ideals])
+            for layer, ideals in layers.items()
+        }
+
+    def weighted_lattice_layer_score_summary(self) -> dict:
+        """Return compact signed ideal-score summaries grouped by lattice layer."""
+        layers = self.get_lattice_layers()
+        return {
+            layer: self._weight_summary(
+                [self.ideal_score(ideal) for ideal in ideals],
+                value_name="ideal_score",
+            )
             for layer, ideals in layers.items()
         }
 
@@ -215,23 +319,96 @@ class WeightedPosetAnalyzer:
             + self.weighted_poset.edge_weight(source, target)
         )
 
-    def _weight_summary(self, weights: list[Number]) -> dict:
+    def _validate_chain_weight_mode(self, mode: str) -> None:
+        valid_modes = {"elements", "edges", "both"}
+        if mode not in valid_modes:
+            raise ValueError(f"Unknown chain weight mode: {mode}")
+
+    def _validate_nonnegative_chain_weights(self, mode: str) -> None:
+        if mode in {"elements", "both"}:
+            for element in self.poset.order:
+                if self.weighted_poset.element_weight(element) < 0:
+                    raise ValueError(
+                        "Chain weight requires nonnegative element weights."
+                    )
+
+        if mode in {"edges", "both"}:
+            for source, target in self.weighted_poset.cover_edges():
+                if self.weighted_poset.edge_weight(source, target) < 0:
+                    raise ValueError("Chain weight requires nonnegative edge weights.")
+
+    def _max_flow(
+        self,
+        capacities: Mapping[tuple[object, object], Number],
+        source,
+        sink,
+    ) -> Number:
+        residual = {}
+        adjacency = {}
+
+        for (start, end), capacity in capacities.items():
+            residual[(start, end)] = residual.get((start, end), 0) + capacity
+            residual.setdefault((end, start), 0)
+            adjacency.setdefault(start, set()).add(end)
+            adjacency.setdefault(end, set()).add(start)
+
+        flow = 0
+        while True:
+            parent = {source: None}
+            queue = deque([source])
+
+            while queue and sink not in parent:
+                current = queue.popleft()
+                for neighbor in adjacency.get(current, ()):
+                    if neighbor not in parent and residual[(current, neighbor)] > 0:
+                        parent[neighbor] = current
+                        queue.append(neighbor)
+
+            if sink not in parent:
+                return flow
+
+            path_capacity = None
+            current = sink
+            while current != source:
+                previous = parent[current]
+                edge_capacity = residual[(previous, current)]
+                path_capacity = (
+                    edge_capacity
+                    if path_capacity is None
+                    else min(path_capacity, edge_capacity)
+                )
+                current = previous
+
+            current = sink
+            while current != source:
+                previous = parent[current]
+                residual[(previous, current)] -= path_capacity
+                residual[(current, previous)] += path_capacity
+                current = previous
+
+            flow += path_capacity
+
+    def _weight_summary(
+        self,
+        weights: list[Number],
+        value_name: str = "ideal_weight",
+    ) -> dict:
         if not weights:
             return {
                 "num_ideals": 0,
-                "min_ideal_weight": 0,
-                "max_ideal_weight": 0,
-                "mean_ideal_weight": 0,
-                "ideal_weight_histogram": {},
+                f"min_{value_name}": 0,
+                f"max_{value_name}": 0,
+                f"mean_{value_name}": 0,
+                f"{value_name}_histogram": {},
             }
 
         counts = Counter(weights)
         return {
             "num_ideals": len(weights),
-            "min_ideal_weight": min(weights),
-            "max_ideal_weight": max(weights),
-            "mean_ideal_weight": sum(weights) / len(weights),
-            "ideal_weight_histogram": {
+            f"min_{value_name}": min(weights),
+            f"max_{value_name}": max(weights),
+            f"mean_{value_name}": sum(weights) / len(weights),
+            f"{value_name}_histogram": {
                 weight: counts[weight]
                 for weight in sorted(counts)
             },
