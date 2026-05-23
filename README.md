@@ -34,12 +34,8 @@ This library focuses on exploring finite posets through dependency analysis, lin
   Reports aggregate interval and Mobius statistics without returning full matrices by default.
 
 - **Weighted poset wrappers**  
-  Attaches element and cover-edge weights without modifying the underlying poset.
-  Measurement-style methods such as weighted width, max chain weight, and ideal
-  weight require nonnegative weights. Signed optimization is exposed separately
-  through score methods such as max antichain score, max chain score, and ideal
-  score. Combined element-plus-edge measurements should only use `both` when
-  element and edge weights are measured in the same units.
+  Attaches element and/or edge weights without modifying the underlying poset. Supports both measurement and signed-score style analyses.
+  
 
 ## Example Summary
 
