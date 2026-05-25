@@ -8,6 +8,8 @@ def test_example_boolean_lattice_analysis_usage():
     analyzer = PosetAnalyzer(poset)
 
     summary = analyzer.summary()
+    zeta_matrix = analyzer.zeta_matrix()
+    zeta_summary = analyzer.zeta_summary()
     mobius_matrix = analyzer.mobius_matrix()
     interval = analyzer.interval("{}", "{1, 2}")
     interval_summary = analyzer.interval_summary()
@@ -68,6 +70,18 @@ def test_example_boolean_lattice_analysis_usage():
         "mean_interval_size": 16 / 9,
         "interval_size_histogram": {1: 4, 2: 4, 4: 1},
     }
+    assert zeta_summary == {
+        "num_zeta_values": 16,
+        "zeta_one_count": 9,
+        "zeta_zero_count": 7,
+        "zeta_density": 9 / 16,
+        "diagonal_count": 4,
+        "strict_comparability_count": 5,
+        "cover_relation_count": 4,
+        "transitive_closure_extra_count": 1,
+        "principal_ideal_size_histogram": {1: 1, 2: 2, 4: 1},
+        "principal_filter_size_histogram": {1: 1, 2: 2, 4: 1},
+    }
     assert mobius_summary == {
         "num_mobius_values": 9,
         "mobius_zero_count": 0,
@@ -84,6 +98,24 @@ def test_example_boolean_lattice_analysis_usage():
             1: {-1: 4},
             2: {1: 1},
         },
+    }
+    assert zeta_matrix == {
+        ("{}", "{}"): 1,
+        ("{}", "{1}"): 1,
+        ("{}", "{2}"): 1,
+        ("{}", "{1, 2}"): 1,
+        ("{1}", "{}"): 0,
+        ("{1}", "{1}"): 1,
+        ("{1}", "{2}"): 0,
+        ("{1}", "{1, 2}"): 1,
+        ("{2}", "{}"): 0,
+        ("{2}", "{1}"): 0,
+        ("{2}", "{2}"): 1,
+        ("{2}", "{1, 2}"): 1,
+        ("{1, 2}", "{}"): 0,
+        ("{1, 2}", "{1}"): 0,
+        ("{1, 2}", "{2}"): 0,
+        ("{1, 2}", "{1, 2}"): 1,
     }
     assert mobius_matrix == {
         ("{}", "{}"): 1,

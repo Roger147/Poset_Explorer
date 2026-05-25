@@ -245,6 +245,68 @@ class WeightedPosetAnalyzer:
         minimum_vertex_cover_weight = self._max_flow(capacities, source, sink)
         return total_weight - minimum_vertex_cover_weight
 
+    def zeta_transform(self, include_self: bool = True) -> dict[str, Number]:
+        """
+        Return element-weighted zeta totals over principal ideals.
+
+        By default this computes g(y) = sum(w(x) for x <= y). With
+        include_self=False, it computes the open/kernel form
+        g(y) = sum(w(x) for x < y).
+
+        This uses element weights only. Interval-native or comparability-pair
+        weights are a separate future extension from cover-edge weights.
+        """
+        return {
+            y: sum(
+                self.weighted_poset.element_weight(x)
+                for x in self.poset.order
+                if self.base.is_less_equal(x, y) and (include_self or x != y)
+            )
+            for y in self.poset.order
+        }
+
+    def mobius_inversion(self, values: Mapping[str, Number]) -> dict[str, Number]:
+        """
+        Invert a closed element-weighted zeta transform.
+
+        This delegates to the base poset's Mobius inversion because the
+        weighted zeta transform still uses the ordinary zeta relation; only
+        the element-indexed input values are weighted.
+        """
+        return self.base.mobius_inversion(values)
+
+    def zeta_kernel_transform(self) -> dict[str, Number]:
+        """
+        Return the open/kernel element-weighted zeta transform.
+
+        The strict/open zeta relation has zero diagonal and is not invertible
+        on its own for finite posets. Use zeta_transform() when an exact
+        Mobius inversion is needed.
+        """
+        return self.zeta_transform(include_self=False)
+
+    def interval_weight(
+        self,
+        x: str,
+        y: str,
+        include_endpoints: bool = True,
+    ) -> Number:
+        """
+        Return the total element weight over [x, y] or its open interval.
+
+        Incomparable endpoints have interval weight 0, matching the base
+        analyzer's empty interval behavior.
+        """
+        return sum(
+            self.weighted_poset.element_weight(element)
+            for element in self.base.interval(x, y)
+            if include_endpoints or element not in {x, y}
+        )
+
+    def open_interval_weight(self, x: str, y: str) -> Number:
+        """Return the total element weight over the open interval (x, y)."""
+        return self.interval_weight(x, y, include_endpoints=False)
+
     def get_lattice_layers(self):
         """Return base analyzer lattice layers, cached for reuse."""
         if self._lattice_layers is None:

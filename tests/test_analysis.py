@@ -143,6 +143,51 @@ def test_mobius_matrix_reports_every_ordered_pair():
     }
 
 
+def test_zeta_matrix_reports_every_ordered_pair():
+    matrix = PosetAnalyzer(chain(2)).zeta_matrix()
+
+    assert matrix == {
+        ("x1", "x1"): 1,
+        ("x1", "x2"): 1,
+        ("x2", "x1"): 0,
+        ("x2", "x2"): 1,
+    }
+
+
+def test_mobius_matrix_is_zeta_matrix_inverse():
+    analyzer = PosetAnalyzer(diamond())
+    zeta = analyzer.zeta_matrix()
+    mobius = analyzer.mobius_matrix()
+
+    for x in analyzer.poset.order:
+        for y in analyzer.poset.order:
+            assert sum(
+                zeta[(x, middle)] * mobius[(middle, y)]
+                for middle in analyzer.poset.order
+            ) == int(x == y)
+            assert sum(
+                mobius[(x, middle)] * zeta[(middle, y)]
+                for middle in analyzer.poset.order
+            ) == int(x == y)
+
+
+def test_zeta_summary_reports_transitive_closure_features():
+    summary = PosetAnalyzer(diamond()).zeta_summary()
+
+    assert summary == {
+        "num_zeta_values": 16,
+        "zeta_one_count": 9,
+        "zeta_zero_count": 7,
+        "zeta_density": pytest.approx(9 / 16),
+        "diagonal_count": 4,
+        "strict_comparability_count": 5,
+        "cover_relation_count": 4,
+        "transitive_closure_extra_count": 1,
+        "principal_ideal_size_histogram": {1: 1, 2: 2, 4: 1},
+        "principal_filter_size_histogram": {1: 1, 2: 2, 4: 1},
+    }
+
+
 def test_mobius_summary_reports_compact_mobius_features():
     summary = PosetAnalyzer(diamond()).mobius_summary()
 

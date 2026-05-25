@@ -27,14 +27,19 @@ This library focuses on exploring finite posets through dependency analysis, lin
 - **Order-ideal traversal and lattice-layer analysis**  
   Groups ideals by rank to visualize the structure of the distributive lattice $J(P)$.
 
-- **Mobius function and inversion utilities**  
-  Computes interval Mobius values and supports zeta transforms with Mobius inversion.
+- **Zeta and Mobius incidence utilities**  
+  Computes zeta and Mobius matrices, supports zeta transforms with Mobius inversion,
+  and reports transitive-closure comparability summaries.
 
-- **Compact interval and Mobius summaries**  
-  Reports aggregate interval and Mobius statistics without returning full matrices by default.
+- **Compact interval, zeta, and Mobius summaries**  
+  Reports aggregate interval and incidence statistics without returning full matrices by default.
 
 - **Weighted poset wrappers**  
-  Attaches element and/or edge weights without modifying the underlying poset. Supports both measurement and signed-score style analyses.
+  Attaches element and/or edge weights without modifying the underlying poset.
+  Supports both measurement and signed-score style analyses, plus element-weighted
+  zeta transforms over closed or open principal ideals. Closed weighted zeta
+  transforms invert directly through Mobius inversion; open/kernel transforms are
+  exposed as accumulation views rather than standalone invertible transforms.
   
 
 ## Example Summary

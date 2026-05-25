@@ -170,11 +170,68 @@ class PosetAnalyzer:
         return compute(x, y)
 
     def mobius_matrix(self) -> dict[tuple[str, str], int]:
-        """Return mu(x, y) for every ordered pair of elements."""
+        """
+        Return mu(x, y) for every ordered pair of elements.
+
+        This is the incidence-algebra inverse of zeta_matrix().
+        """
         return {
             (x, y): self.mobius(x, y)
             for x in self.poset.order
             for y in self.poset.order
+        }
+
+    def zeta_matrix(self) -> dict[tuple[str, str], int]:
+        """Return zeta(x, y) for every ordered pair of elements."""
+        return {
+            (x, y): int(self.is_less_equal(x, y))
+            for x in self.poset.order
+            for y in self.poset.order
+        }
+
+    def zeta_summary(self) -> dict[str, Any]:
+        """
+        Return compact zeta/comparability statistics.
+
+        The zeta matrix is the transitive reflexive closure of the stored
+        cover/dependency relations. This summary emphasizes that closure by
+        reporting how many strict comparabilities are implied beyond the
+        stored cover relations.
+        """
+        num_elements = self.num_elements()
+        total_ordered_pairs = num_elements * num_elements
+        strict_comparability_count = len(self.comparability_edges())
+        cover_relation_count = self.num_relations()
+        comparable_ordered_pair_count = num_elements + strict_comparability_count
+        incomparable_ordered_pair_count = (
+            total_ordered_pairs - comparable_ordered_pair_count
+        )
+        principal_ideal_sizes = [
+            sum(1 for x in self.poset.order if self.is_less_equal(x, y))
+            for y in self.poset.order
+        ]
+        principal_filter_sizes = [
+            sum(1 for y in self.poset.order if self.is_less_equal(x, y))
+            for x in self.poset.order
+        ]
+
+        return {
+            "num_zeta_values": total_ordered_pairs,
+            "zeta_one_count": comparable_ordered_pair_count,
+            "zeta_zero_count": incomparable_ordered_pair_count,
+            "zeta_density": (
+                comparable_ordered_pair_count / total_ordered_pairs
+                if total_ordered_pairs
+                else 0
+            ),
+            "diagonal_count": num_elements,
+            "strict_comparability_count": strict_comparability_count,
+            "cover_relation_count": cover_relation_count,
+            "transitive_closure_extra_count": (
+                strict_comparability_count - cover_relation_count
+            ),
+            "principal_ideal_size_histogram": self._histogram(principal_ideal_sizes),
+            "principal_filter_size_histogram": self._histogram(principal_filter_sizes),
         }
 
     def mobius_summary(self) -> dict[str, Any]:
@@ -250,7 +307,7 @@ class PosetAnalyzer:
         values: Mapping[str, int | float],
     ) -> dict[str, int | float]:
         """
-        Invert a zeta transform: f(y) = sum_{x <= y} mu(x, y) g(x).
+        Invert a closed zeta transform: f(y) = sum_{x <= y} mu(x, y) g(x).
         """
         self._validate_value_keys(values)
         return {
