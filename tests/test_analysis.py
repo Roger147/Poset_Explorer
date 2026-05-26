@@ -1,8 +1,9 @@
 import pytest
 
 from analysis import PosetAnalyzer
-from families import antichain, asymmetric_convergence, chain, crown, diamond, n_poset
+from families import antichain, chain, crown, diamond, n_poset
 from ideal import Ideal 
+from poset import Poset
 
 
 @pytest.mark.parametrize(
@@ -69,7 +70,6 @@ def test_basic_family_heights():
         (diamond(), 2),
         (n_poset(), 2),
         (crown(3), 3),
-        (asymmetric_convergence([1, 3]), 2),
     ],
 )
 def test_named_families_have_expected_widths(family, expected_width):
@@ -211,7 +211,16 @@ def test_mobius_summary_reports_compact_mobius_features():
 
 
 def test_mobius_summary_omits_rank_distance_histogram_for_non_ranked_posets():
-    summary = PosetAnalyzer(asymmetric_convergence([1, 3])).mobius_summary()
+    poset = Poset(
+        {"a", "b1", "b2", "b3", "z"},
+        [
+            ("a", "z"),
+            ("b1", "b2"),
+            ("b2", "b3"),
+            ("b3", "z"),
+        ],
+    )
+    summary = PosetAnalyzer(poset).mobius_summary()
 
     assert summary["is_ranked"] is False
     assert summary["mobius_value_histogram_by_rank_distance"] == {}

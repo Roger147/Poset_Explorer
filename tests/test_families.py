@@ -2,12 +2,12 @@ import pytest
 
 from families import (
     antichain,
-    asymmetric_convergence,
     boolean_lattice,
     chain,
     crown,
     diamond,
     n_poset,
+    partition_lattice,
 )
 
 
@@ -47,22 +47,6 @@ def test_n_poset_factory_builds_asymmetric_overlap():
     assert poset.children_of("C") == ["B", "D"]
 
 
-def test_asymmetric_convergence_factory_builds_unequal_chains_into_z():
-    poset = asymmetric_convergence([1, 3])
-
-    assert poset.minimals() == ["c1_1", "c2_1"]
-    assert poset.maximals() == ["z"]
-    assert poset.parents_of("z") == ["c1_1", "c2_3"]
-    assert poset.children_of("c2_1") == ["c2_2"]
-    assert poset.children_of("c2_3") == ["z"]
-
-
-@pytest.mark.parametrize("lengths", [[], [2], [0, 1], [2, 2]])
-def test_asymmetric_convergence_rejects_non_family_parameters(lengths):
-    with pytest.raises(ValueError):
-        asymmetric_convergence(lengths)
-
-
 def test_crown_factory_builds_height_two_exclusion_pattern():
     poset = crown(3)
 
@@ -99,3 +83,45 @@ def test_boolean_lattice_rank_zero_has_single_empty_subset():
 def test_boolean_lattice_rejects_negative_rank():
     with pytest.raises(ValueError):
         boolean_lattice(-1)
+
+
+def test_partition_lattice_rank_three_builds_refinement_covers():
+    poset = partition_lattice(3)
+
+    bottom = "{1}|{2}|{3}"
+    top = "{1, 2, 3}"
+    middles = {"{1, 2}|{3}", "{1, 3}|{2}", "{1}|{2, 3}"}
+
+    assert len(poset.elements) == 5
+    assert poset.minimals() == [bottom]
+    assert poset.maximals() == [top]
+    assert set(poset.children_of(bottom)) == middles
+    assert all(poset.children_of(middle) == [top] for middle in middles)
+    assert poset.parents_of(top) == ["{1, 2}|{3}", "{1, 3}|{2}", "{1}|{2, 3}"]
+
+
+@pytest.mark.parametrize(
+    ("rank", "expected_count"),
+    [
+        (0, 1),
+        (1, 1),
+        (2, 2),
+        (3, 5),
+        (4, 15),
+    ],
+)
+def test_partition_lattice_has_bell_number_element_counts(rank, expected_count):
+    assert len(partition_lattice(rank).elements) == expected_count
+
+
+def test_partition_lattice_rank_zero_has_single_empty_partition():
+    poset = partition_lattice(0)
+
+    assert poset.elements == {"{}"}
+    assert poset.minimals() == ["{}"]
+    assert poset.maximals() == ["{}"]
+
+
+def test_partition_lattice_rejects_negative_rank():
+    with pytest.raises(ValueError):
+        partition_lattice(-1)

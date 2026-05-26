@@ -53,31 +53,6 @@ def n_poset() -> Poset:
     )
 
 
-def asymmetric_convergence(lengths: list[int]) -> Poset:
-    """
-    Return disjoint chains of unequal positive lengths converging into z.
-
-    A length-k branch has elements c{i}_1 < ... < c{i}_k < z.
-    """
-    if len(lengths) < 2:
-        raise ValueError("asymmetric convergence requires at least two chains.")
-    if any(length <= 0 for length in lengths):
-        raise ValueError("chain lengths must be positive.")
-    if len(set(lengths)) == 1:
-        raise ValueError("at least two chain lengths must differ.")
-
-    elements = {"z"}
-    relations: list[tuple[str, str]] = []
-
-    for branch_index, length in enumerate(lengths, start=1):
-        labels = [f"c{branch_index}_{level}" for level in range(1, length + 1)]
-        elements.update(labels)
-        relations.extend(zip(labels, labels[1:]))
-        relations.append((labels[-1], "z"))
-
-    return Poset(elements, relations)
-
-
 def crown(n: int) -> Poset:
     """
     Return the 2n-element crown poset with b_j < a_i exactly when i != j.
@@ -119,7 +94,87 @@ def boolean_lattice(n: int) -> Poset:
     return Poset(set(labels.values()), relations)
 
 
+def partition_lattice(n: int) -> Poset:
+    """
+    Return the partition lattice Pi_n ordered by refinement.
+
+    Elements are set partitions of {1, ..., n}. Covers merge exactly two
+    blocks, so the discrete partition is minimal and the one-block partition
+    is maximal.
+    """
+    if n < 0:
+        raise ValueError("Partition lattice rank must be nonnegative.")
+
+    partitions = _set_partitions(n)
+    labels = {
+        partition: _partition_label(partition)
+        for partition in partitions
+    }
+    relations: list[tuple[str, str]] = []
+
+    for partition in partitions:
+        for left_index, right_index in combinations(range(len(partition)), 2):
+            merged = _merge_partition_blocks(partition, left_index, right_index)
+            relations.append((labels[partition], labels[merged]))
+
+    return Poset(set(labels.values()), relations)
+
+
 def _subset_label(subset: frozenset[int]) -> str:
     if not subset:
         return "{}"
     return "{" + ", ".join(str(x) for x in sorted(subset)) + "}"
+
+
+def _set_partitions(n: int) -> list[tuple[tuple[int, ...], ...]]:
+    partitions = [()]
+
+    for element in range(1, n + 1):
+        next_partitions = set()
+
+        for partition in partitions:
+            next_partitions.add(_canonical_partition((*partition, (element,))))
+
+            for block_index, block in enumerate(partition):
+                blocks = list(partition)
+                blocks[block_index] = tuple(sorted((*block, element)))
+                next_partitions.add(_canonical_partition(blocks))
+
+        partitions = sorted(next_partitions, key=_partition_key)
+
+    return partitions
+
+
+def _merge_partition_blocks(
+    partition: tuple[tuple[int, ...], ...],
+    left_index: int,
+    right_index: int,
+) -> tuple[tuple[int, ...], ...]:
+    blocks = [
+        block
+        for index, block in enumerate(partition)
+        if index not in {left_index, right_index}
+    ]
+    blocks.append(tuple(sorted((*partition[left_index], *partition[right_index]))))
+    return _canonical_partition(blocks)
+
+
+def _canonical_partition(
+    partition,
+) -> tuple[tuple[int, ...], ...]:
+    return tuple(sorted((tuple(sorted(block)) for block in partition), key=_block_key))
+
+
+def _partition_key(partition: tuple[tuple[int, ...], ...]):
+    return (len(partition), partition)
+
+
+def _block_key(block: tuple[int, ...]) -> tuple[int, int, tuple[int, ...]]:
+    return (block[0], len(block), block)
+
+
+def _partition_label(partition: tuple[tuple[int, ...], ...]) -> str:
+    if not partition:
+        return "{}"
+
+    return "|".join(_subset_label(frozenset(block)) for block in partition)
