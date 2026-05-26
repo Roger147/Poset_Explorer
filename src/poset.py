@@ -1,9 +1,11 @@
+import warnings
 from typing import Set, FrozenSet, List, Dict
 from ideal import Ideal
 
 class Poset:
     def __init__(self, elements: Set[str], relations: List[tuple[str, str]]):
         self.elements: Set[str] = elements
+        relations = self._normalize_relations(relations)
         
         # Hasse diagram forward edges (adjacency list for child nodes)
         self.adj: Dict[str, set[str]] = {e: set() for e in elements}
@@ -91,4 +93,23 @@ class Poset:
 
         if visited != len(self.elements):
             raise ValueError("Invalid poset: relations contain a cycle.")
+
+    def _normalize_relations(
+        self,
+        relations: List[tuple[str, str]],
+    ) -> list[tuple[str, str]]:
+        normalized = list(dict.fromkeys(relations))
+        num_duplicates = len(relations) - len(normalized)
+
+        if num_duplicates:
+            warnings.warn(
+                (
+                    f"Removed {num_duplicates} duplicate relation(s); "
+                    "poset relations are set-valued, so each x < y pair is "
+                    "stored once."
+                ),
+                stacklevel=2,
+            )
+
+        return normalized
     

@@ -154,6 +154,10 @@ class WeightedPosetAnalyzer:
         used by the selected mode to be nonnegative. Use max_chain_score() for
         signed optimization over chains.
 
+        Chains are scored along stored cover-edge paths. Element scoring
+        includes every intermediate element on that path; it does not skip
+        negative intermediate elements via transitive comparability.
+
         The combined "both" mode is meaningful only when element and edge
         weights are measured in the same units.
         """
@@ -168,6 +172,12 @@ class WeightedPosetAnalyzer:
         This uses the same chain accumulation rules as max_chain_weight(), but
         allows negative weights. On a nonempty poset the optimized chain is
         nonempty; in edge-only mode, a singleton chain has score 0.
+
+        Chains are scored along stored cover-edge paths. Element scoring
+        includes every intermediate element on that path; it does not skip
+        negative intermediate elements via transitive comparability. Future
+        interval-native weighting can represent those skip-style interpretations
+        explicitly.
         """
         self._validate_chain_weight_mode(mode)
 
@@ -245,25 +255,17 @@ class WeightedPosetAnalyzer:
         minimum_vertex_cover_weight = self._max_flow(capacities, source, sink)
         return total_weight - minimum_vertex_cover_weight
 
-    def zeta_transform(self, include_self: bool = True) -> dict[str, Number]:
+    def zeta_transform(self) -> dict[str, Number]:
         """
         Return element-weighted zeta totals over principal ideals.
 
-        By default this computes g(y) = sum(w(x) for x <= y). With
-        include_self=False, it computes the open/kernel form
-        g(y) = sum(w(x) for x < y).
+        This computes g(y) = sum(w(x) for x <= y). Use the base analyzer's
+        strict_zeta_transform() for the strict relation x < y.
 
         This uses element weights only. Interval-native or comparability-pair
         weights are a separate future extension from cover-edge weights.
         """
-        return {
-            y: sum(
-                self.weighted_poset.element_weight(x)
-                for x in self.poset.order
-                if self.base.is_less_equal(x, y) and (include_self or x != y)
-            )
-            for y in self.poset.order
-        }
+        return self.base.zeta_transform(self.weighted_poset.element_weights)
 
     def mobius_inversion(self, values: Mapping[str, Number]) -> dict[str, Number]:
         """
@@ -275,24 +277,13 @@ class WeightedPosetAnalyzer:
         """
         return self.base.mobius_inversion(values)
 
-    def zeta_kernel_transform(self) -> dict[str, Number]:
-        """
-        Return the open/kernel element-weighted zeta transform.
-
-        The strict/open zeta relation has zero diagonal and is not invertible
-        on its own for finite posets. Use zeta_transform() when an exact
-        Mobius inversion is needed.
-        """
-        return self.zeta_transform(include_self=False)
-
     def interval_weight(
         self,
         x: str,
         y: str,
-        include_endpoints: bool = True,
     ) -> Number:
         """
-        Return the total element weight over [x, y] or its open interval.
+        Return the total element weight over the closed interval [x, y].
 
         Incomparable endpoints have interval weight 0, matching the base
         analyzer's empty interval behavior.
@@ -300,12 +291,15 @@ class WeightedPosetAnalyzer:
         return sum(
             self.weighted_poset.element_weight(element)
             for element in self.base.interval(x, y)
-            if include_endpoints or element not in {x, y}
         )
 
     def open_interval_weight(self, x: str, y: str) -> Number:
         """Return the total element weight over the open interval (x, y)."""
-        return self.interval_weight(x, y, include_endpoints=False)
+        return sum(
+            self.weighted_poset.element_weight(element)
+            for element in self.base.interval(x, y)
+            if element not in {x, y}
+        )
 
     def get_lattice_layers(self):
         """Return base analyzer lattice layers, cached for reuse."""

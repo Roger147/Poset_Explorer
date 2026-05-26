@@ -264,18 +264,6 @@ def test_weighted_zeta_transform_uses_element_weights_over_principal_ideals():
     analyzer = WeightedPosetAnalyzer(weighted)
 
     assert analyzer.zeta_transform() == {"A": 2, "B": 5, "C": 7, "D": 17}
-    assert analyzer.zeta_transform(include_self=False) == {
-        "A": 0,
-        "B": 2,
-        "C": 2,
-        "D": 10,
-    }
-    assert analyzer.zeta_kernel_transform() == {
-        "A": 0,
-        "B": 2,
-        "C": 2,
-        "D": 10,
-    }
 
 
 def test_weighted_mobius_inversion_recovers_element_weights_from_closed_zeta():
@@ -290,20 +278,6 @@ def test_weighted_mobius_inversion_recovers_element_weights_from_closed_zeta():
     assert analyzer.mobius_inversion(transformed) == weighted.element_weights
 
 
-def test_open_weighted_zeta_is_not_a_standalone_mobius_inversion_target():
-    weighted = WeightedPoset(
-        chain(2),
-        element_weights={"x1": 2, "x2": 3},
-    )
-
-    analyzer = WeightedPosetAnalyzer(weighted)
-
-    assert analyzer.zeta_kernel_transform() == {"x1": 0, "x2": 2}
-    assert analyzer.mobius_inversion(analyzer.zeta_kernel_transform()) != (
-        weighted.element_weights
-    )
-
-
 def test_weighted_interval_weight_supports_closed_and_open_intervals():
     weighted = WeightedPoset(
         diamond(),
@@ -313,7 +287,6 @@ def test_weighted_interval_weight_supports_closed_and_open_intervals():
     analyzer = WeightedPosetAnalyzer(weighted)
 
     assert analyzer.interval_weight("A", "D") == 17
-    assert analyzer.interval_weight("A", "D", include_endpoints=False) == 8
     assert analyzer.open_interval_weight("A", "D") == 8
     assert analyzer.interval_weight("B", "C") == 0
 

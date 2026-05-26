@@ -1,3 +1,5 @@
+import pytest
+
 from families import diamond
 from poset import Poset
 
@@ -37,3 +39,24 @@ def test_parent_and_child_accessors_use_canonical_order():
     assert poset.order == ["M", "B", "Z", "A"]
     assert poset.children_of("M") == ["B", "A"]
     assert poset.parents_of("A") == ["M", "Z"]
+
+
+def test_duplicate_relations_are_normalized_with_warning():
+    with pytest.warns(
+        UserWarning,
+        match="Removed 2 duplicate relation.*relations are set-valued",
+    ):
+        poset = Poset(
+            {"A", "B", "C"},
+            [
+                ("A", "B"),
+                ("A", "B"),
+                ("B", "C"),
+                ("A", "B"),
+            ],
+        )
+
+    assert poset.children_of("A") == ["B"]
+    assert poset.parents_of("B") == ["A"]
+    assert poset.global_in_degree["B"] == 1
+    assert poset.global_in_degree["C"] == 1

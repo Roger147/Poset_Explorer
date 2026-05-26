@@ -37,9 +37,7 @@ This library focuses on exploring finite posets through dependency analysis, lin
 - **Weighted poset wrappers**  
   Attaches element and/or edge weights without modifying the underlying poset.
   Supports both measurement and signed-score style analyses, plus element-weighted
-  zeta transforms over closed or open principal ideals. Closed weighted zeta
-  transforms invert directly through Mobius inversion; open/kernel transforms are
-  exposed as accumulation views rather than standalone invertible transforms.
+  zeta transforms over closed principal ideals and weighted interval totals.
   
 
 ## Example Summary

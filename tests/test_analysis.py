@@ -227,8 +227,21 @@ def test_zeta_transform_and_mobius_inversion_round_trip():
     assert analyzer.mobius_inversion(transformed) == values
 
 
+def test_strict_zeta_transform_uses_strict_predecessors():
+    analyzer = PosetAnalyzer(diamond())
+    values = {"A": 2, "B": 3, "C": 5, "D": 7}
+
+    transformed = analyzer.strict_zeta_transform(values)
+
+    assert transformed == {"A": 0, "B": 2, "C": 2, "D": 10}
+    assert analyzer.mobius_inversion(transformed) != values
+
+
 def test_mobius_transforms_require_values_for_all_elements():
     analyzer = PosetAnalyzer(diamond())
 
     with pytest.raises(KeyError):
         analyzer.zeta_transform({"A": 1})
+
+    with pytest.raises(KeyError):
+        analyzer.strict_zeta_transform({"A": 1})

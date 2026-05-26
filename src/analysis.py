@@ -302,6 +302,26 @@ class PosetAnalyzer:
             for y in self.poset.order
         }
 
+    def strict_zeta_transform(
+        self,
+        values: Mapping[str, int | float],
+    ) -> dict[str, int | float]:
+        """
+        Return g(y) = sum_{x < y} f(x) for element-indexed values f.
+
+        This uses the strict zeta relation, with the diagonal removed. It is
+        not a standalone Mobius inversion target.
+        """
+        self._validate_value_keys(values)
+        return {
+            y: sum(
+                values[x]
+                for x in self.poset.order
+                if x != y and self.is_less_equal(x, y)
+            )
+            for y in self.poset.order
+        }
+
     def mobius_inversion(
         self,
         values: Mapping[str, int | float],
