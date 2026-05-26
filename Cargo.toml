@@ -1,0 +1,12 @@
+[package]
+name = "poset-explorer-rust"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "_poset_explorer_rust"
+path = "rust/src/lib.rs"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.23", features = ["extension-module"] }

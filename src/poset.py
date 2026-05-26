@@ -23,6 +23,11 @@ class Poset:
             self.global_in_degree[v] += 1
         self._check_for_cycles()
         self.order = self.canonical_order()
+        self.index_to_element = list(self.order)
+        self.element_to_index = {
+            element: index
+            for index, element in enumerate(self.index_to_element)
+        }
         
 
     def minimals(self) -> list[str]:
@@ -40,6 +45,14 @@ class Poset:
     def children_of(self, x: str) -> list[str]:
         """Return children of x in canonical order."""
         return [child for child in self.order if child in self.adj[x]]
+
+    def indexed_relations(self) -> list[tuple[int, int]]:
+        """Return stored cover relations as canonical-order element indices."""
+        return [
+            (self.element_to_index[source], self.element_to_index[target])
+            for source in self.order
+            for target in self.children_of(source)
+        ]
 
     def minimals_in_subposet(self, subset: FrozenSet[str]) -> List[str]:
         

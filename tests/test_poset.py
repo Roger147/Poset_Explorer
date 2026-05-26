@@ -39,6 +39,24 @@ def test_parent_and_child_accessors_use_canonical_order():
     assert poset.order == ["M", "B", "Z", "A"]
     assert poset.children_of("M") == ["B", "A"]
     assert poset.parents_of("A") == ["M", "Z"]
+    assert poset.indexed_relations() == [(0, 1), (0, 3), (2, 3)]
+
+
+def test_element_index_maps_follow_canonical_order():
+    poset = Poset(
+        {"task: build", "{1}|{2}", "deploy"},
+        [
+            ("task: build", "deploy"),
+            ("{1}|{2}", "deploy"),
+        ],
+    )
+
+    assert poset.index_to_element == ["task: build", "{1}|{2}", "deploy"]
+    assert poset.element_to_index == {
+        "task: build": 0,
+        "{1}|{2}": 1,
+        "deploy": 2,
+    }
 
 
 def test_duplicate_relations_are_normalized_with_warning():

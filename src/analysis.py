@@ -1,6 +1,7 @@
 from collections import Counter, defaultdict
 from typing import Any, Dict, FrozenSet, Mapping
 
+from closure import transitive_successor_closure
 from ideal import Ideal
 
 
@@ -380,14 +381,17 @@ class PosetAnalyzer:
 
     def _transitive_successor_closure(self) -> dict[str, set[str]]:
         if self._successor_closure is None:
-            closure: dict[str, set[str]] = {x: set() for x in self.poset.order}
-
-            for x in reversed(self.poset.order):
-                for child in self.poset.children_of(x):
-                    closure[x].add(child)
-                    closure[x].update(closure[child])
-
-            self._successor_closure = closure
+            indexed_closure = transitive_successor_closure(
+                self.num_elements(),
+                self.poset.indexed_relations(),
+            )
+            self._successor_closure = {
+                element: {
+                    self.poset.index_to_element[successor_index]
+                    for successor_index in indexed_closure[element_index]
+                }
+                for element_index, element in enumerate(self.poset.index_to_element)
+            }
 
         return self._successor_closure
 

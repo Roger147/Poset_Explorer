@@ -1,0 +1,18 @@
+[build-system]
+requires = ["maturin>=1,<2"]
+build-backend = "maturin"
+
+[project]
+name = "poset-explorer"
+version = "0.1.0"
+description = "Exploratory tools for finite posets and related combinatorial analyses."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Roger147", email = "rogelin364@gmail.com" },
+]
+
+[tool.maturin]
+module-name = "_poset_explorer_rust"
+bindings = "pyo3"
