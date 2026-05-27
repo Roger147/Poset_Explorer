@@ -1,0 +1,125 @@
+ My recommended Rust migration order:
+
+  1. Add an internal indexed representation: labels <-> indices.
+  2. Move transitive closure to Rust.
+  3. Use that closure to speed zeta summaries/matrices.
+  4. Add Rust Mobius matrix computation.
+  5. Add Rust linear-extension counting with bitmask memoization.
+  6. Consider ideal lattice generation once the representation boundary is clearer.
+
+  The key design point: don’t have Rust operate on string labels internally. Python should map labels to integer indices, Rust should compute on
+  indices/bitsets/vectors, then Python maps results back to the current public API. That keeps the Python API stable while letting the heavy
+  work move over cleanly.
+
+
+› labels as in the poset node names and their relations?
+
+
+• Yes.
+
+  By labels, I mean the current string names for poset elements:
+
+  "A", "B", "C", "D"
+  "x1", "x2", "x3"
+  "{}", "{1}", "{1, 2}"
+  "{1}|{2, 3}"
+
+  Right now relations are also label-based:
+
+  [("A", "B"), ("A", "C"), ("B", "D"), ("C", "D")]
+
+  For Rust, the better internal representation would be integer-based:
+
+  order = ["A", "B", "C", "D"]
+
+  label_to_index = {
+      "A": 0,
+      "B": 1,
+      "C": 2,
+      "D": 3,
+  relations = [
+      (0, 1),
+      (0, 2),
+      (1, 3),
+      (2, 3),
+  ]
+
+  Then Rust computes on compact indices:
+
+  0 < 1
+  0 < 2
+  1 < 3
+  2 < 3
+
+  and returns index-based results. Python converts them back to labels when needed.
+
+  Example:
+
+  Rust returns comparable pairs:
+
+  [(0, 1), (0, 2), (0, 3), (1, 3), (2, 3)]
+
+  Python maps back to:
+
+  [("A", "B"), ("A", "C"), ("A", "D"), ("B", "D"), ("C", "D")]
+
+  So yes: labels are the poset node names, and relations are the ordered pairs between those labels.
+
+
+› can we tie it to a poset-side dict? to make arbitrarily named labels work? if that makes sense
+
+
+• Yes, that makes sense, and it’s the right boundary.
+
+  Add a Poset-side index map derived from the canonical order:
+
+  self.order = self.canonical_order()
+  self.index = {label: i for i, label in enumerate(self.order)}
+  self.labels = list(self.order)
+
+  Then anything Rust-facing uses indices:
+
+  def indexed_relations(self) -> list[tuple[int, int]]:
+      return [
+          (self.index[source], self.index[target])
+          for source in self.order
+          for target in self.children_of(source)
+      ]
+
+  That preserves arbitrary labels because Python owns the label mapping:
+
+  "task: compile assets" -> 0
+  "{1}|{2, 3}" -> 1
+  ("tuple", "label") maybe later -> 2
+
+  Rust only sees:
+
+  n = 4
+  edges = [(0, 1), (0, 2), (1, 3), (2, 3)]
+
+  Then Python maps results back:
+
+  def label_pair(self, i: int, j: int) -> tuple[str, str]:
+      return self.labels[i], self.labels[j]
+
+  I’d probably name them explicitly to avoid ambiguity:
+
+  self.label_to_index
+  self.index_to_label
+
+  or:
+
+  self.element_to_index
+  self.index_to_element
+
+  Since your domain language is “elements,” I’d lean:
+
+  self.element_to_index
+  self.index_to_element
+
+  This also gives you a stable bridge for future Rust features without changing the public API.
+
+
+› yes, i agree with element_to_index and index_to_element. [Pasted Content 2189 chars]
+
+  gpt-5.5 medium · ~/project/Poset_Explorer
