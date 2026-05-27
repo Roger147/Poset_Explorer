@@ -8,5 +8,9 @@ name = "_poset_explorer_rust"
 path = "rust/src/lib.rs"
 crate-type = ["cdylib"]
 
+[[test]]
+name = "closure"
+path = "rust/tests/closure.rs"
+
 [dependencies]
 pyo3 = { version = "0.23", features = ["extension-module"] }

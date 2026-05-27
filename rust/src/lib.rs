@@ -1,47 +1,28 @@
-use std::collections::BTreeSet;
+mod closure;
 
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
+
+use closure::{
+    bitsets_to_index_lists, transitive_successor_closure_bitsets, ClosureError,
+};
 
 #[pyfunction]
 fn transitive_successor_closure(
     num_elements: usize,
     cover_edges: Vec<(usize, usize)>,
 ) -> PyResult<Vec<Vec<usize>>> {
-    let mut children = vec![Vec::new(); num_elements];
+    let closure = transitive_successor_closure_bitsets(num_elements, cover_edges)
+        .map_err(closure_error_to_py_value_error)?;
+    Ok(bitsets_to_index_lists(num_elements, &closure))
+}
 
-    for (source, target) in cover_edges {
-        if source >= num_elements || target >= num_elements {
-            return Err(PyValueError::new_err(
-                "cover edge index is outside the element range",
-            ));
-        }
-        if source >= target {
-            return Err(PyValueError::new_err(
-                "cover edge indices must follow topological order",
-            ));
-        }
-
-        children[source].push(target);
-    }
-
-    let mut closure: Vec<BTreeSet<usize>> = vec![BTreeSet::new(); num_elements];
-
-    for source in (0..num_elements).rev() {
-        for child in children[source].iter().copied() {
-            closure[source].insert(child);
-
-            let child_successors: Vec<usize> = closure[child].iter().copied().collect();
-            for successor in child_successors {
-                closure[source].insert(successor);
-            }
-        }
-    }
-
-    Ok(closure
-        .into_iter()
-        .map(|successors| successors.into_iter().collect())
-        .collect())
+fn closure_error_to_py_value_error(error: ClosureError) -> PyErr {
+    let message = match error {
+        ClosureError::OutOfRange => "cover edge index is outside the element range",
+        ClosureError::NotTopological => "cover edge indices must follow topological order",
+    };
+    PyValueError::new_err(message)
 }
 
 #[pymodule]
