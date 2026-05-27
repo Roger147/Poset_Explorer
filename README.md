@@ -84,6 +84,32 @@ Current work centers on:
 - exploring canonical workflow families,
 - and eventually providing ML-usable feature vectors.
 
+## Repo Setup
+
+Create and activate a virtual environment:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
+
+Install Python dependencies:
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+This project includes a Rust-backed transitive-closure backend built through
+Maturin/PyO3. To use it, install Rust/Cargo if needed, then build the extension
+into the active virtual environment:
+
+```bash
+python -m maturin develop
+```
+
+If the Rust extension is not built, the Python closure backend is used as a
+fallback.
+
 ## Running Tests
 
 Activate the virtual environment and run:
