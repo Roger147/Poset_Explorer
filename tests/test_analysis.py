@@ -95,6 +95,18 @@ def test_comparable_successors_reuse_transitive_closure_cache():
     assert analyzer.is_less_equal("x1", "x3")
 
 
+def test_comparability_queries_use_indexed_closure_cache():
+    analyzer = PosetAnalyzer(chain(3))
+
+    assert analyzer._indexed_successor_closure is None
+    assert analyzer._successor_closure is None
+
+    assert analyzer.is_less_equal("x1", "x3")
+
+    assert analyzer._indexed_successor_closure == [{1, 2}, {2}, set()]
+    assert analyzer._successor_closure is None
+
+
 def test_chain_mobius_values_use_closed_intervals():
     analyzer = PosetAnalyzer(chain(3))
 

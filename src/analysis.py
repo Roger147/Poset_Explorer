@@ -1,7 +1,10 @@
 from collections import Counter, defaultdict
 from typing import Any, Dict, FrozenSet, Mapping
 
-from closure import transitive_successor_closure
+from closure import (
+    transitive_successor_closure,
+    zeta_summary_data,
+)
 from ideal import Ideal
 
 
@@ -9,6 +12,7 @@ class PosetAnalyzer:
 
     def __init__(self, poset):
         self.poset = poset
+        self._indexed_successor_closure: list[set[int]] | None = None
         self._successor_closure: dict[str, set[str]] | None = None
 
     def count_linear_extensions(self) -> int:
@@ -72,22 +76,34 @@ class PosetAnalyzer:
     def comparable_successors(self, x: str) -> list[str]:
         """Return all elements greater than x, in canonical order."""
         self._validate_element(x)
-        closure = self._transitive_successor_closure()
-        return [y for y in self.poset.order if y in closure[x]]
+        closure = self._indexed_transitive_successor_closure()
+        element_index = self.poset.element_to_index[x]
+        return [
+            self.poset.index_to_element[successor_index]
+            for successor_index in sorted(closure[element_index])
+        ]
 
     def comparability_edges(self) -> list[tuple[str, str]]:
         """Return all strict comparability pairs x < y."""
-        edges = []
-        for x in self.poset.order:
-            edges.extend((x, y) for y in self.comparable_successors(x))
-        return edges
+        closure = self._indexed_transitive_successor_closure()
+        return [
+            (
+                self.poset.index_to_element[element_index],
+                self.poset.index_to_element[successor_index],
+            )
+            for element_index, successors in enumerate(closure)
+            for successor_index in sorted(successors)
+        ]
 
     def is_less_equal(self, x: str, y: str) -> bool:
         """Return whether x <= y in the transitive order."""
         self._validate_element(x)
         self._validate_element(y)
-        closure = self._transitive_successor_closure()
-        return x == y or y in closure[x]
+        if x == y:
+            return True
+
+        closure = self._indexed_transitive_successor_closure()
+        return self.poset.element_to_index[y] in closure[self.poset.element_to_index[x]]
 
     def interval(self, x: str, y: str) -> list[str]:
         """Return the closed interval [x, y] in canonical order."""
@@ -201,20 +217,14 @@ class PosetAnalyzer:
         """
         num_elements = self.num_elements()
         total_ordered_pairs = num_elements * num_elements
-        strict_comparability_count = len(self.comparability_edges())
+        strict_comparability_count, principal_ideal_sizes, principal_filter_sizes = (
+            zeta_summary_data(num_elements, self.poset.indexed_relations())
+        )
         cover_relation_count = self.num_relations()
         comparable_ordered_pair_count = num_elements + strict_comparability_count
         incomparable_ordered_pair_count = (
             total_ordered_pairs - comparable_ordered_pair_count
         )
-        principal_ideal_sizes = [
-            sum(1 for x in self.poset.order if self.is_less_equal(x, y))
-            for y in self.poset.order
-        ]
-        principal_filter_sizes = [
-            sum(1 for y in self.poset.order if self.is_less_equal(x, y))
-            for x in self.poset.order
-        ]
 
         return {
             "num_zeta_values": total_ordered_pairs,
@@ -381,10 +391,7 @@ class PosetAnalyzer:
 
     def _transitive_successor_closure(self) -> dict[str, set[str]]:
         if self._successor_closure is None:
-            indexed_closure = transitive_successor_closure(
-                self.num_elements(),
-                self.poset.indexed_relations(),
-            )
+            indexed_closure = self._indexed_transitive_successor_closure()
             self._successor_closure = {
                 element: {
                     self.poset.index_to_element[successor_index]
@@ -394,6 +401,15 @@ class PosetAnalyzer:
             }
 
         return self._successor_closure
+
+    def _indexed_transitive_successor_closure(self) -> list[set[int]]:
+        if self._indexed_successor_closure is None:
+            self._indexed_successor_closure = transitive_successor_closure(
+                self.num_elements(),
+                self.poset.indexed_relations(),
+            )
+
+        return self._indexed_successor_closure
 
     def _interval_pairs(self) -> list[tuple[str, str]]:
         return [

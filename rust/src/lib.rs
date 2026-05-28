@@ -4,7 +4,8 @@ use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
 use closure::{
-    bitsets_to_index_lists, transitive_successor_closure_bitsets, ClosureError,
+    bitsets_to_index_lists, principal_sizes_from_bitsets,
+    transitive_successor_closure_bitsets, zeta_summary_data_from_bitsets, ClosureError,
 };
 
 #[pyfunction]
@@ -15,6 +16,26 @@ fn transitive_successor_closure(
     let closure = transitive_successor_closure_bitsets(num_elements, cover_edges)
         .map_err(closure_error_to_py_value_error)?;
     Ok(bitsets_to_index_lists(num_elements, &closure))
+}
+
+#[pyfunction]
+fn principal_ideal_filter_sizes(
+    num_elements: usize,
+    cover_edges: Vec<(usize, usize)>,
+) -> PyResult<(Vec<usize>, Vec<usize>)> {
+    let closure = transitive_successor_closure_bitsets(num_elements, cover_edges)
+        .map_err(closure_error_to_py_value_error)?;
+    Ok(principal_sizes_from_bitsets(num_elements, &closure))
+}
+
+#[pyfunction]
+fn zeta_summary_data(
+    num_elements: usize,
+    cover_edges: Vec<(usize, usize)>,
+) -> PyResult<(usize, Vec<usize>, Vec<usize>)> {
+    let closure = transitive_successor_closure_bitsets(num_elements, cover_edges)
+        .map_err(closure_error_to_py_value_error)?;
+    Ok(zeta_summary_data_from_bitsets(num_elements, &closure))
 }
 
 fn closure_error_to_py_value_error(error: ClosureError) -> PyErr {
@@ -28,5 +49,7 @@ fn closure_error_to_py_value_error(error: ClosureError) -> PyErr {
 #[pymodule]
 fn _poset_explorer_rust(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(transitive_successor_closure, module)?)?;
+    module.add_function(wrap_pyfunction!(principal_ideal_filter_sizes, module)?)?;
+    module.add_function(wrap_pyfunction!(zeta_summary_data, module)?)?;
     Ok(())
 }

@@ -48,6 +48,38 @@ pub fn bitsets_to_index_lists(num_elements: usize, bitsets: &[Vec<u64>]) -> Vec<
         .collect()
 }
 
+pub fn principal_sizes_from_bitsets(
+    num_elements: usize,
+    closure: &[Vec<u64>],
+) -> (Vec<usize>, Vec<usize>) {
+    let mut ideal_sizes = vec![1; num_elements];
+    let mut filter_sizes = vec![1; num_elements];
+
+    for source in 0..num_elements {
+        for target in 0..num_elements {
+            if bit_is_set(&closure[source], target) {
+                filter_sizes[source] += 1;
+                ideal_sizes[target] += 1;
+            }
+        }
+    }
+
+    (ideal_sizes, filter_sizes)
+}
+
+pub fn zeta_summary_data_from_bitsets(
+    num_elements: usize,
+    closure: &[Vec<u64>],
+) -> (usize, Vec<usize>, Vec<usize>) {
+    let strict_comparability_count = closure
+        .iter()
+        .map(|bitset| bitset.iter().map(|word| word.count_ones() as usize).sum::<usize>())
+        .sum();
+    let (ideal_sizes, filter_sizes) = principal_sizes_from_bitsets(num_elements, closure);
+
+    (strict_comparability_count, ideal_sizes, filter_sizes)
+}
+
 fn set_bit(bitset: &mut [u64], index: usize) {
     bitset[index / 64] |= 1_u64 << (index % 64);
 }

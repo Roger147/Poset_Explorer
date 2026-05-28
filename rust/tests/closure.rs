@@ -2,7 +2,8 @@
 mod closure;
 
 use closure::{
-    bitsets_to_index_lists, transitive_successor_closure_bitsets, ClosureError,
+    bitsets_to_index_lists, principal_sizes_from_bitsets,
+    transitive_successor_closure_bitsets, zeta_summary_data_from_bitsets, ClosureError,
 };
 
 #[test]
@@ -39,5 +40,33 @@ fn closure_rejects_edges_outside_topological_order() {
     assert_eq!(
         transitive_successor_closure_bitsets(2, vec![(1, 0)]),
         Err(ClosureError::NotTopological),
+    );
+}
+
+#[test]
+fn principal_sizes_count_reflexive_ideal_and_filter_members() {
+    let closure = transitive_successor_closure_bitsets(
+        4,
+        vec![(0, 1), (0, 2), (1, 3), (2, 3)],
+    )
+    .unwrap();
+
+    assert_eq!(
+        principal_sizes_from_bitsets(4, &closure),
+        (vec![1, 2, 2, 4], vec![4, 2, 2, 1]),
+    );
+}
+
+#[test]
+fn zeta_summary_data_counts_strict_comparabilities_and_principal_sizes() {
+    let closure = transitive_successor_closure_bitsets(
+        4,
+        vec![(0, 1), (0, 2), (1, 3), (2, 3)],
+    )
+    .unwrap();
+
+    assert_eq!(
+        zeta_summary_data_from_bitsets(4, &closure),
+        (5, vec![1, 2, 2, 4], vec![4, 2, 2, 1]),
     );
 }
