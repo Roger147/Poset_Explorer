@@ -1,3 +1,4 @@
+import math
 from collections import Counter, defaultdict
 from typing import Any, Mapping
 
@@ -24,23 +25,31 @@ class PosetAnalyzer:
         self._successor_closure: dict[str, set[str]] | None = None
         self._lattice_layer_sizes: list[int] | None = None
 
-    def count_linear_extensions(self, max_elements: int | None = 24) -> int:
+    def count_linear_extensions(
+        self,
+        max_elements: int | None = 24,
+        max_states: int | None = 1_000_000,
+    ) -> int:
         """
         Count linear extensions using bitmask memoization.
 
-        This computation is exponential in general. Empty posets and chains
-        return immediately; otherwise, max_elements guards the starting poset
-        size. Pass max_elements=None only when you have checked the structure
-        carefully: non-chain posets can exhaust time or memory very quickly,
-        even with the Rust backend.
+        This computation is exponential in general. Empty posets, chains, and
+        antichains return immediately; otherwise, max_elements guards the
+        starting poset size and max_states guards Rust memoization growth. Pass
+        max_elements=None or max_states=None only when you have checked the
+        structure carefully: non-chain, non-antichain posets can exhaust time
+        or memory very quickly, even with the Rust backend.
         """
         num_elements = self.num_elements()
 
         if num_elements == 0:
             return 1
 
-        if self.width() == 1:
+        width = self.width()
+        if width == 1:
             return 1
+        if width == num_elements:
+            return math.factorial(num_elements)
 
         if max_elements is not None and num_elements > max_elements:
             raise ValueError(
@@ -48,7 +57,11 @@ class PosetAnalyzer:
                 "max_elements=None to override the element-count guard."
             )
 
-        return linear_extension_count_data(num_elements, self.poset.indexed_relations())
+        return linear_extension_count_data(
+            num_elements,
+            self.poset.indexed_relations(),
+            max_states=max_states,
+        )
 
     def num_elements(self) -> int:
         """Return the number of elements in the poset."""

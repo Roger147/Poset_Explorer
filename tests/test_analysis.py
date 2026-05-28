@@ -1,3 +1,5 @@
+import math
+
 import pytest
 
 from analysis import PosetAnalyzer
@@ -22,19 +24,34 @@ def test_named_families_have_expected_linear_extension_counts(family, expected_c
 
 
 def test_linear_extension_count_guard_blocks_large_non_chain_posets():
-    analyzer = PosetAnalyzer(antichain(25))
+    elements = {f"x{i}" for i in range(25)}
+    analyzer = PosetAnalyzer(Poset(elements, [("x0", "x1")]))
 
     with pytest.raises(ValueError, match="max_elements=None"):
         analyzer.count_linear_extensions()
 
 
+def test_linear_extension_count_uses_factorial_fast_return_for_antichains():
+    assert PosetAnalyzer(antichain(25)).count_linear_extensions() == math.factorial(25)
+
+
 def test_linear_extension_count_guard_can_be_overridden():
-    analyzer = PosetAnalyzer(antichain(5))
+    elements = {f"x{i}" for i in range(5)}
+    analyzer = PosetAnalyzer(Poset(elements, [("x0", "x1")]))
 
     with pytest.raises(ValueError, match="max_elements=None"):
         analyzer.count_linear_extensions(max_elements=4)
 
-    assert analyzer.count_linear_extensions(max_elements=None) == 120
+    assert analyzer.count_linear_extensions(max_elements=None) == 60
+
+
+def test_linear_extension_count_state_guard_can_be_overridden():
+    analyzer = PosetAnalyzer(Poset({"a", "b", "c", "d"}, [("a", "d")]))
+
+    with pytest.raises(ValueError, match="state limit"):
+        analyzer.count_linear_extensions(max_states=2)
+
+    assert analyzer.count_linear_extensions(max_states=None) == 12
 
 
 def test_linear_extension_count_allows_long_chains_before_guard():

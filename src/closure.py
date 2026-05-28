@@ -7,6 +7,8 @@ replace this backend without changing analyzer-facing behavior.
 
 from collections.abc import Iterable
 
+DEFAULT_LINEAR_EXTENSION_STATE_LIMIT = 1_000_000
+
 try:
     from _poset_explorer_rust import (
         interval_summary_data as _rust_interval_summary_data,
@@ -182,6 +184,7 @@ def width_data(
 def linear_extension_count_data(
     num_elements: int,
     cover_edges: Iterable[tuple[int, int]],
+    max_states: int | None = DEFAULT_LINEAR_EXTENSION_STATE_LIMIT,
 ) -> int:
     """Return the number of linear extensions using bitmask memoization."""
     cover_edges = list(cover_edges)
@@ -191,9 +194,9 @@ def linear_extension_count_data(
         )
 
     if _rust_linear_extension_count_data is not None:
-        return _rust_linear_extension_count_data(num_elements, cover_edges)
+        return _rust_linear_extension_count_data(num_elements, cover_edges, max_states)
 
-    return _python_linear_extension_count(num_elements, cover_edges)
+    return _python_linear_extension_count(num_elements, cover_edges, max_states)
 
 
 def interval_summary_data(
@@ -361,6 +364,7 @@ def _python_width(
 def _python_linear_extension_count(
     num_elements: int,
     cover_edges: Iterable[tuple[int, int]],
+    max_states: int | None,
 ) -> int:
     predecessor_masks = [0 for _ in range(num_elements)]
     for source, target in cover_edges:
@@ -380,6 +384,8 @@ def _python_linear_extension_count(
 
         if remaining_mask in memo:
             return memo[remaining_mask]
+        if max_states is not None and len(memo) >= max_states:
+            raise ValueError("linear extension state limit was exceeded")
 
         total = 0
         for element_index in range(num_elements):

@@ -6,11 +6,13 @@ pub enum ExtensionError {
     OutOfRange,
     NotTopological,
     CountOverflow,
+    StateLimitExceeded,
 }
 
 pub fn linear_extension_count(
     num_elements: usize,
     cover_edges: Vec<(usize, usize)>,
+    max_states: Option<usize>,
 ) -> Result<u128, ExtensionError> {
     if num_elements > 128 {
         return Err(ExtensionError::TooManyElements);
@@ -20,13 +22,14 @@ pub fn linear_extension_count(
     let remaining = mask_for_size(num_elements);
     let mut memo = HashMap::new();
 
-    count_remaining(remaining, &predecessor_masks, &mut memo)
+    count_remaining(remaining, &predecessor_masks, &mut memo, max_states)
 }
 
 fn count_remaining(
     remaining: u128,
     predecessor_masks: &[u128],
     memo: &mut HashMap<u128, u128>,
+    max_states: Option<usize>,
 ) -> Result<u128, ExtensionError> {
     if remaining == 0 {
         return Ok(1);
@@ -34,6 +37,11 @@ fn count_remaining(
 
     if let Some(count) = memo.get(&remaining) {
         return Ok(*count);
+    }
+    if let Some(limit) = max_states {
+        if memo.len() >= limit {
+            return Err(ExtensionError::StateLimitExceeded);
+        }
     }
 
     let mut total = 0_u128;
@@ -49,7 +57,7 @@ fn count_remaining(
         }
 
         let next_remaining = remaining ^ element_bit;
-        let branch_count = count_remaining(next_remaining, predecessor_masks, memo)?;
+        let branch_count = count_remaining(next_remaining, predecessor_masks, memo, max_states)?;
         total = total
             .checked_add(branch_count)
             .ok_or(ExtensionError::CountOverflow)?;

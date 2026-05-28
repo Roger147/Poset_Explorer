@@ -211,8 +211,8 @@ def test_linear_extension_count_data_counts_indexed_extensions():
 def test_linear_extension_count_data_uses_rust_backend_when_available(monkeypatch):
     calls = []
 
-    def fake_rust_backend(num_elements, cover_edges):
-        calls.append((num_elements, cover_edges))
+    def fake_rust_backend(num_elements, cover_edges, max_states):
+        calls.append((num_elements, cover_edges, max_states))
         return 5
 
     monkeypatch.setattr(
@@ -223,8 +223,19 @@ def test_linear_extension_count_data_uses_rust_backend_when_available(monkeypatc
 
     result = linear_extension_count_data(3, [(0, 1), (1, 2)])
 
-    assert calls == [(3, [(0, 1), (1, 2)])]
+    assert calls == [(3, [(0, 1), (1, 2)], 1_000_000)]
     assert result == 5
+
+
+def test_linear_extension_count_data_uses_configurable_state_limit():
+    try:
+        linear_extension_count_data(4, [], max_states=2)
+    except ValueError as error:
+        assert "state limit" in str(error)
+    else:
+        raise AssertionError("expected ValueError")
+
+    assert linear_extension_count_data(4, [], max_states=None) == 24
 
 
 def test_linear_extension_count_data_rejects_more_than_u128_bitmask_capacity():

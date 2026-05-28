@@ -89,12 +89,13 @@ fn width_data(num_elements: usize, cover_edges: Vec<(usize, usize)>) -> PyResult
     Ok(width_from_bitsets(num_elements, &closure))
 }
 
-#[pyfunction]
+#[pyfunction(signature = (num_elements, cover_edges, max_states=None))]
 fn linear_extension_count_data(
     num_elements: usize,
     cover_edges: Vec<(usize, usize)>,
+    max_states: Option<usize>,
 ) -> PyResult<u128> {
-    rust_linear_extension_count(num_elements, cover_edges)
+    rust_linear_extension_count(num_elements, cover_edges, max_states)
         .map_err(extension_error_to_py_value_error)
 }
 
@@ -162,6 +163,7 @@ fn extension_error_to_py_value_error(error: ExtensionError) -> PyErr {
         ExtensionError::OutOfRange => "cover edge index is outside the element range",
         ExtensionError::NotTopological => "cover edge indices must follow topological order",
         ExtensionError::CountOverflow => "linear extension count exceeded u128",
+        ExtensionError::StateLimitExceeded => "linear extension state limit was exceeded",
     };
     PyValueError::new_err(message)
 }
