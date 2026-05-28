@@ -40,7 +40,7 @@ def test_example_boolean_lattice_analysis_usage():
     assert analyzer.is_less_equal("{}", "{1, 2}")
     assert interval == ["{}", "{1}", "{2}", "{1, 2}"]
     assert analyzer.mobius("{}", "{1, 2}") == 1
-    assert zeta_values == {"{}": 1, "{1}": 3, "{2}": 4, "{1, 2}": 11}
+    assert zeta_values == {"{}": 1.0, "{1}": 3.0, "{2}": 4.0, "{1, 2}": 11.0}
     assert analyzer.mobius_inversion(zeta_values) == values
     assert analyzer.get_lattice_layers() == {
         0: [Ideal()],

@@ -85,6 +85,50 @@ pub fn zeta_summary_data_from_bitsets(
     (strict_comparability_count, ideal_sizes, filter_sizes)
 }
 
+pub fn zeta_transform_from_bitsets(
+    num_elements: usize,
+    closure: &[Vec<u64>],
+    values: &[f64],
+) -> Vec<f64> {
+    let mut transformed = vec![0.0; num_elements];
+
+    for target in 0..num_elements {
+        let mut total = values[target];
+
+        for source in 0..target {
+            if bit_is_set(&closure[source], target) {
+                total += values[source];
+            }
+        }
+
+        transformed[target] = total;
+    }
+
+    transformed
+}
+
+pub fn strict_zeta_transform_from_bitsets(
+    num_elements: usize,
+    closure: &[Vec<u64>],
+    values: &[f64],
+) -> Vec<f64> {
+    let mut transformed = vec![0.0; num_elements];
+
+    for target in 0..num_elements {
+        let mut total = 0.0;
+
+        for source in 0..target {
+            if bit_is_set(&closure[source], target) {
+                total += values[source];
+            }
+        }
+
+        transformed[target] = total;
+    }
+
+    transformed
+}
+
 pub fn interval_summary_data_from_bitsets(
     num_elements: usize,
     closure: &[Vec<u64>],

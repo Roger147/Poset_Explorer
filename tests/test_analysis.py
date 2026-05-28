@@ -258,7 +258,7 @@ def test_zeta_transform_and_mobius_inversion_round_trip():
 
     transformed = analyzer.zeta_transform(values)
 
-    assert transformed == {"A": 2, "B": 5, "C": 7, "D": 17}
+    assert transformed == {"A": 2.0, "B": 5.0, "C": 7.0, "D": 17.0}
     assert analyzer.mobius_inversion(transformed) == values
 
 
@@ -268,7 +268,7 @@ def test_strict_zeta_transform_uses_strict_predecessors():
 
     transformed = analyzer.strict_zeta_transform(values)
 
-    assert transformed == {"A": 0, "B": 2, "C": 2, "D": 10}
+    assert transformed == {"A": 0.0, "B": 2.0, "C": 2.0, "D": 10.0}
     assert analyzer.mobius_inversion(transformed) != values
 
 

@@ -3,8 +3,9 @@ mod closure;
 
 use closure::{
     bitsets_to_index_lists, interval_summary_data_from_bitsets, mobius_matrix_from_bitsets,
-    principal_sizes_from_bitsets, transitive_successor_closure_bitsets,
-    zeta_summary_data_from_bitsets, ClosureError,
+    principal_sizes_from_bitsets, strict_zeta_transform_from_bitsets,
+    transitive_successor_closure_bitsets, zeta_summary_data_from_bitsets,
+    zeta_transform_from_bitsets, ClosureError,
 };
 
 #[test]
@@ -60,6 +61,28 @@ fn zeta_summary_data_counts_strict_comparabilities_and_principal_sizes() {
     assert_eq!(
         zeta_summary_data_from_bitsets(4, &closure),
         (5, vec![1, 2, 2, 4], vec![4, 2, 2, 1]),
+    );
+}
+
+#[test]
+fn zeta_transform_sums_values_over_principal_ideals() {
+    let closure =
+        transitive_successor_closure_bitsets(4, vec![(0, 1), (0, 2), (1, 3), (2, 3)]).unwrap();
+
+    assert_eq!(
+        zeta_transform_from_bitsets(4, &closure, &[2.0, 3.0, 5.0, 7.0]),
+        vec![2.0, 5.0, 7.0, 17.0],
+    );
+}
+
+#[test]
+fn strict_zeta_transform_excludes_diagonal_values() {
+    let closure =
+        transitive_successor_closure_bitsets(4, vec![(0, 1), (0, 2), (1, 3), (2, 3)]).unwrap();
+
+    assert_eq!(
+        strict_zeta_transform_from_bitsets(4, &closure, &[2.0, 3.0, 5.0, 7.0]),
+        vec![0.0, 2.0, 2.0, 10.0],
     );
 }
 

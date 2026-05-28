@@ -5,8 +5,10 @@ from closure import (
     interval_summary_data,
     lattice_layer_sizes as backend_lattice_layer_sizes,
     mobius_matrix_data,
+    strict_zeta_transform_data,
     transitive_successor_closure,
     zeta_summary_data,
+    zeta_transform_data,
 )
 from ideal import Ideal
 
@@ -272,38 +274,45 @@ class PosetAnalyzer:
     def zeta_transform(
         self,
         values: Mapping[str, int | float],
-    ) -> dict[str, int | float]:
+    ) -> dict[str, float]:
         """
         Return g(y) = sum_{x <= y} f(x) for element-indexed values f.
+
+        Transform totals are computed through an f64-compatible backend path,
+        so results are returned as floats.
         """
         self._validate_value_keys(values)
+        transformed = zeta_transform_data(
+            self.num_elements(),
+            self.poset.indexed_relations(),
+            self._value_vector(values),
+        )
         return {
-            y: sum(
-                values[x]
-                for x in self.poset.order
-                if self.is_less_equal(x, y)
-            )
-            for y in self.poset.order
+            self.poset.index_to_element[index]: transformed[index]
+            for index in range(self.num_elements())
         }
 
     def strict_zeta_transform(
         self,
         values: Mapping[str, int | float],
-    ) -> dict[str, int | float]:
+    ) -> dict[str, float]:
         """
         Return g(y) = sum_{x < y} f(x) for element-indexed values f.
 
         This uses the strict zeta relation, with the diagonal removed. It is
-        not a standalone Mobius inversion target.
+        not a standalone Mobius inversion target. Transform totals are computed
+        through an f64-compatible backend path, so results are returned as
+        floats.
         """
         self._validate_value_keys(values)
+        transformed = strict_zeta_transform_data(
+            self.num_elements(),
+            self.poset.indexed_relations(),
+            self._value_vector(values),
+        )
         return {
-            y: sum(
-                values[x]
-                for x in self.poset.order
-                if x != y and self.is_less_equal(x, y)
-            )
-            for y in self.poset.order
+            self.poset.index_to_element[index]: transformed[index]
+            for index in range(self.num_elements())
         }
 
     def mobius_inversion(
@@ -366,6 +375,9 @@ class PosetAnalyzer:
         if missing:
             ordered_missing = [x for x in self.poset.order if x in missing]
             raise KeyError(f"Missing values for poset elements: {ordered_missing}")
+
+    def _value_vector(self, values: Mapping[str, int | float]) -> list[int | float]:
+        return [values[element] for element in self.poset.order]
 
     def _transitive_successor_closure(self) -> dict[str, set[str]]:
         if self._successor_closure is None:

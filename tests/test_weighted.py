@@ -263,7 +263,7 @@ def test_weighted_zeta_transform_uses_element_weights_over_principal_ideals():
 
     analyzer = WeightedPosetAnalyzer(weighted)
 
-    assert analyzer.zeta_transform() == {"A": 2, "B": 5, "C": 7, "D": 17}
+    assert analyzer.zeta_transform() == {"A": 2.0, "B": 5.0, "C": 7.0, "D": 17.0}
 
 
 def test_weighted_mobius_inversion_recovers_element_weights_from_closed_zeta():

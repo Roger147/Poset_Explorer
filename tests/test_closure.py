@@ -4,8 +4,10 @@ from closure import (
     interval_summary_data,
     mobius_matrix_data,
     principal_ideal_filter_sizes,
+    strict_zeta_transform_data,
     transitive_successor_closure,
     zeta_summary_data,
+    zeta_transform_data,
 )
 
 
@@ -107,6 +109,70 @@ def test_zeta_summary_data_uses_rust_backend_when_available(monkeypatch):
 
     assert calls == [(3, [(0, 1), (1, 2)])]
     assert result == (2, [1, 2, 3], [3, 2, 1])
+
+
+def test_zeta_transform_data_reports_float_principal_ideal_totals():
+    assert zeta_transform_data(
+        4,
+        [
+            (0, 1),
+            (0, 2),
+            (1, 3),
+            (2, 3),
+        ],
+        [2, 3, 5, 7],
+    ) == [2.0, 5.0, 7.0, 17.0]
+
+
+def test_zeta_transform_data_uses_rust_backend_when_available(monkeypatch):
+    calls = []
+
+    def fake_rust_backend(num_elements, cover_edges, values):
+        calls.append((num_elements, cover_edges, values))
+        return [1.0, 3.0]
+
+    monkeypatch.setattr(
+        closure,
+        "_rust_zeta_transform_data",
+        fake_rust_backend,
+    )
+
+    result = zeta_transform_data(2, [(0, 1)], [1, 2])
+
+    assert calls == [(2, [(0, 1)], [1.0, 2.0])]
+    assert result == [1.0, 3.0]
+
+
+def test_strict_zeta_transform_data_reports_float_strict_totals():
+    assert strict_zeta_transform_data(
+        4,
+        [
+            (0, 1),
+            (0, 2),
+            (1, 3),
+            (2, 3),
+        ],
+        [2, 3, 5, 7],
+    ) == [0.0, 2.0, 2.0, 10.0]
+
+
+def test_strict_zeta_transform_data_uses_rust_backend_when_available(monkeypatch):
+    calls = []
+
+    def fake_rust_backend(num_elements, cover_edges, values):
+        calls.append((num_elements, cover_edges, values))
+        return [0.0, 1.0]
+
+    monkeypatch.setattr(
+        closure,
+        "_rust_strict_zeta_transform_data",
+        fake_rust_backend,
+    )
+
+    result = strict_zeta_transform_data(2, [(0, 1)], [1, 2])
+
+    assert calls == [(2, [(0, 1)], [1.0, 2.0])]
+    assert result == [0.0, 1.0]
 
 
 def test_interval_summary_data_reports_closed_interval_features():

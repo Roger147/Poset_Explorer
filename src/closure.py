@@ -13,16 +13,20 @@ try:
         lattice_layer_sizes as _rust_lattice_layer_sizes,
         mobius_matrix_data as _rust_mobius_matrix_data,
         principal_ideal_filter_sizes as _rust_principal_ideal_filter_sizes,
+        strict_zeta_transform_data as _rust_strict_zeta_transform_data,
         transitive_successor_closure as _rust_transitive_successor_closure,
         zeta_summary_data as _rust_zeta_summary_data,
+        zeta_transform_data as _rust_zeta_transform_data,
     )
 except ImportError:
     _rust_interval_summary_data = None
     _rust_lattice_layer_sizes = None
     _rust_mobius_matrix_data = None
     _rust_principal_ideal_filter_sizes = None
+    _rust_strict_zeta_transform_data = None
     _rust_transitive_successor_closure = None
     _rust_zeta_summary_data = None
+    _rust_zeta_transform_data = None
 
 
 def transitive_successor_closure(
@@ -102,6 +106,48 @@ def zeta_summary_data(
         closure,
     )
     return sum(len(successors) for successors in closure), ideal_sizes, filter_sizes
+
+
+def zeta_transform_data(
+    num_elements: int,
+    cover_edges: Iterable[tuple[int, int]],
+    values: Iterable[int | float],
+) -> list[float]:
+    """
+    Return closed zeta transform totals through an f64-compatible data path.
+    """
+    cover_edges = list(cover_edges)
+    value_vector = [float(value) for value in values]
+    if len(value_vector) != num_elements:
+        raise ValueError("value vector length must match the element count")
+
+    if _rust_zeta_transform_data is not None:
+        return list(_rust_zeta_transform_data(num_elements, cover_edges, value_vector))
+
+    closure = _python_transitive_successor_closure(num_elements, cover_edges)
+    return _python_zeta_transform(num_elements, closure, value_vector)
+
+
+def strict_zeta_transform_data(
+    num_elements: int,
+    cover_edges: Iterable[tuple[int, int]],
+    values: Iterable[int | float],
+) -> list[float]:
+    """
+    Return strict zeta transform totals through an f64-compatible data path.
+    """
+    cover_edges = list(cover_edges)
+    value_vector = [float(value) for value in values]
+    if len(value_vector) != num_elements:
+        raise ValueError("value vector length must match the element count")
+
+    if _rust_strict_zeta_transform_data is not None:
+        return list(
+            _rust_strict_zeta_transform_data(num_elements, cover_edges, value_vector)
+        )
+
+    closure = _python_transitive_successor_closure(num_elements, cover_edges)
+    return _python_strict_zeta_transform(num_elements, closure, value_vector)
 
 
 def lattice_layer_sizes(
@@ -209,6 +255,42 @@ def _python_lattice_layer_sizes(
         current_layer = next_layer
 
     return layer_sizes
+
+
+def _python_zeta_transform(
+    num_elements: int,
+    closure: list[set[int]],
+    values: list[float],
+) -> list[float]:
+    transformed = []
+
+    for target in range(num_elements):
+        total = values[target] + sum(
+            values[source]
+            for source in range(target)
+            if target in closure[source]
+        )
+        transformed.append(total)
+
+    return transformed
+
+
+def _python_strict_zeta_transform(
+    num_elements: int,
+    closure: list[set[int]],
+    values: list[float],
+) -> list[float]:
+    transformed = []
+
+    for target in range(num_elements):
+        total = sum(
+            values[source]
+            for source in range(target)
+            if target in closure[source]
+        )
+        transformed.append(total)
+
+    return transformed
 
 
 def _python_interval_sizes(

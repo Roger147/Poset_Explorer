@@ -6,8 +6,9 @@ use pyo3::prelude::*;
 
 use closure::{
     bitsets_to_index_lists, interval_summary_data_from_bitsets, mobius_matrix_from_bitsets,
-    principal_sizes_from_bitsets, transitive_successor_closure_bitsets,
-    zeta_summary_data_from_bitsets, ClosureError,
+    principal_sizes_from_bitsets, strict_zeta_transform_from_bitsets,
+    transitive_successor_closure_bitsets, zeta_summary_data_from_bitsets,
+    zeta_transform_from_bitsets, ClosureError,
 };
 use ideals::{lattice_layer_sizes as rust_lattice_layer_sizes, IdealError};
 
@@ -39,6 +40,44 @@ fn zeta_summary_data(
     let closure = transitive_successor_closure_bitsets(num_elements, cover_edges)
         .map_err(closure_error_to_py_value_error)?;
     Ok(zeta_summary_data_from_bitsets(num_elements, &closure))
+}
+
+#[pyfunction]
+fn zeta_transform_data(
+    num_elements: usize,
+    cover_edges: Vec<(usize, usize)>,
+    values: Vec<f64>,
+) -> PyResult<Vec<f64>> {
+    if values.len() != num_elements {
+        return Err(PyValueError::new_err(
+            "value vector length must match the element count",
+        ));
+    }
+
+    let closure = transitive_successor_closure_bitsets(num_elements, cover_edges)
+        .map_err(closure_error_to_py_value_error)?;
+    Ok(zeta_transform_from_bitsets(num_elements, &closure, &values))
+}
+
+#[pyfunction]
+fn strict_zeta_transform_data(
+    num_elements: usize,
+    cover_edges: Vec<(usize, usize)>,
+    values: Vec<f64>,
+) -> PyResult<Vec<f64>> {
+    if values.len() != num_elements {
+        return Err(PyValueError::new_err(
+            "value vector length must match the element count",
+        ));
+    }
+
+    let closure = transitive_successor_closure_bitsets(num_elements, cover_edges)
+        .map_err(closure_error_to_py_value_error)?;
+    Ok(strict_zeta_transform_from_bitsets(
+        num_elements,
+        &closure,
+        &values,
+    ))
 }
 
 #[pyfunction]
@@ -102,6 +141,8 @@ fn _poset_explorer_rust(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(transitive_successor_closure, module)?)?;
     module.add_function(wrap_pyfunction!(principal_ideal_filter_sizes, module)?)?;
     module.add_function(wrap_pyfunction!(zeta_summary_data, module)?)?;
+    module.add_function(wrap_pyfunction!(zeta_transform_data, module)?)?;
+    module.add_function(wrap_pyfunction!(strict_zeta_transform_data, module)?)?;
     module.add_function(wrap_pyfunction!(interval_summary_data, module)?)?;
     module.add_function(wrap_pyfunction!(mobius_matrix_data, module)?)?;
     module.add_function(wrap_pyfunction!(lattice_layer_sizes, module)?)?;
