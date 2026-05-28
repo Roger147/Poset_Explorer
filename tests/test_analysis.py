@@ -21,6 +21,26 @@ def test_named_families_have_expected_linear_extension_counts(family, expected_c
     assert analyzer.count_linear_extensions() == expected_count
 
 
+def test_linear_extension_count_guard_blocks_large_non_chain_posets():
+    analyzer = PosetAnalyzer(antichain(25))
+
+    with pytest.raises(ValueError, match="max_elements=None"):
+        analyzer.count_linear_extensions()
+
+
+def test_linear_extension_count_guard_can_be_overridden():
+    analyzer = PosetAnalyzer(antichain(5))
+
+    with pytest.raises(ValueError, match="max_elements=None"):
+        analyzer.count_linear_extensions(max_elements=4)
+
+    assert analyzer.count_linear_extensions(max_elements=None) == 120
+
+
+def test_linear_extension_count_allows_long_chains_before_guard():
+    assert PosetAnalyzer(chain(30)).count_linear_extensions() == 1
+
+
 def test_diamond_lattice_layers():
     analyzer = PosetAnalyzer(diamond())
 

@@ -1,4 +1,5 @@
 mod closure;
+mod extensions;
 mod ideals;
 
 use pyo3::exceptions::PyValueError;
@@ -7,9 +8,10 @@ use pyo3::prelude::*;
 use closure::{
     bitsets_to_index_lists, interval_summary_data_from_bitsets, mobius_matrix_from_bitsets,
     principal_sizes_from_bitsets, strict_zeta_transform_from_bitsets,
-    transitive_successor_closure_bitsets, zeta_summary_data_from_bitsets,
+    transitive_successor_closure_bitsets, width_from_bitsets, zeta_summary_data_from_bitsets,
     zeta_transform_from_bitsets, ClosureError,
 };
+use extensions::{linear_extension_count as rust_linear_extension_count, ExtensionError};
 use ideals::{lattice_layer_sizes as rust_lattice_layer_sizes, IdealError};
 
 #[pyfunction]
@@ -81,6 +83,22 @@ fn strict_zeta_transform_data(
 }
 
 #[pyfunction]
+fn width_data(num_elements: usize, cover_edges: Vec<(usize, usize)>) -> PyResult<usize> {
+    let closure = transitive_successor_closure_bitsets(num_elements, cover_edges)
+        .map_err(closure_error_to_py_value_error)?;
+    Ok(width_from_bitsets(num_elements, &closure))
+}
+
+#[pyfunction]
+fn linear_extension_count_data(
+    num_elements: usize,
+    cover_edges: Vec<(usize, usize)>,
+) -> PyResult<u128> {
+    rust_linear_extension_count(num_elements, cover_edges)
+        .map_err(extension_error_to_py_value_error)
+}
+
+#[pyfunction]
 fn interval_summary_data(
     num_elements: usize,
     cover_edges: Vec<(usize, usize)>,
@@ -136,6 +154,18 @@ fn ideal_error_to_py_value_error(error: IdealError) -> PyErr {
     PyValueError::new_err(message)
 }
 
+fn extension_error_to_py_value_error(error: ExtensionError) -> PyErr {
+    let message = match error {
+        ExtensionError::TooManyElements => {
+            "Rust linear extension counting currently supports at most 128 elements"
+        }
+        ExtensionError::OutOfRange => "cover edge index is outside the element range",
+        ExtensionError::NotTopological => "cover edge indices must follow topological order",
+        ExtensionError::CountOverflow => "linear extension count exceeded u128",
+    };
+    PyValueError::new_err(message)
+}
+
 #[pymodule]
 fn _poset_explorer_rust(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(transitive_successor_closure, module)?)?;
@@ -143,6 +173,8 @@ fn _poset_explorer_rust(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(zeta_summary_data, module)?)?;
     module.add_function(wrap_pyfunction!(zeta_transform_data, module)?)?;
     module.add_function(wrap_pyfunction!(strict_zeta_transform_data, module)?)?;
+    module.add_function(wrap_pyfunction!(width_data, module)?)?;
+    module.add_function(wrap_pyfunction!(linear_extension_count_data, module)?)?;
     module.add_function(wrap_pyfunction!(interval_summary_data, module)?)?;
     module.add_function(wrap_pyfunction!(mobius_matrix_data, module)?)?;
     module.add_function(wrap_pyfunction!(lattice_layer_sizes, module)?)?;

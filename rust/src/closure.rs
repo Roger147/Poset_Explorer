@@ -129,6 +129,26 @@ pub fn strict_zeta_transform_from_bitsets(
     transformed
 }
 
+pub fn width_from_bitsets(num_elements: usize, closure: &[Vec<u64>]) -> usize {
+    let mut matched_right_to_left = vec![None; num_elements];
+    let mut matching_size = 0;
+
+    for left in 0..num_elements {
+        let mut visited_right = vec![false; num_elements];
+        if can_match(
+            left,
+            num_elements,
+            closure,
+            &mut visited_right,
+            &mut matched_right_to_left,
+        ) {
+            matching_size += 1;
+        }
+    }
+
+    num_elements - matching_size
+}
+
 pub fn interval_summary_data_from_bitsets(
     num_elements: usize,
     closure: &[Vec<u64>],
@@ -220,6 +240,43 @@ fn set_bit(bitset: &mut [u64], index: usize) {
 
 fn bit_is_set(bitset: &[u64], index: usize) -> bool {
     (bitset[index / 64] & (1_u64 << (index % 64))) != 0
+}
+
+fn can_match(
+    left: usize,
+    num_elements: usize,
+    closure: &[Vec<u64>],
+    visited_right: &mut [bool],
+    matched_right_to_left: &mut [Option<usize>],
+) -> bool {
+    for right in 0..num_elements {
+        if !bit_is_set(&closure[left], right) || visited_right[right] {
+            continue;
+        }
+
+        visited_right[right] = true;
+
+        match matched_right_to_left[right] {
+            None => {
+                matched_right_to_left[right] = Some(left);
+                return true;
+            }
+            Some(previous_left) => {
+                if can_match(
+                    previous_left,
+                    num_elements,
+                    closure,
+                    visited_right,
+                    matched_right_to_left,
+                ) {
+                    matched_right_to_left[right] = Some(left);
+                    return true;
+                }
+            }
+        }
+    }
+
+    false
 }
 
 fn histogram(values: &[usize]) -> Vec<(usize, usize)> {

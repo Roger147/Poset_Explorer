@@ -11,20 +11,24 @@ try:
     from _poset_explorer_rust import (
         interval_summary_data as _rust_interval_summary_data,
         lattice_layer_sizes as _rust_lattice_layer_sizes,
+        linear_extension_count_data as _rust_linear_extension_count_data,
         mobius_matrix_data as _rust_mobius_matrix_data,
         principal_ideal_filter_sizes as _rust_principal_ideal_filter_sizes,
         strict_zeta_transform_data as _rust_strict_zeta_transform_data,
         transitive_successor_closure as _rust_transitive_successor_closure,
+        width_data as _rust_width_data,
         zeta_summary_data as _rust_zeta_summary_data,
         zeta_transform_data as _rust_zeta_transform_data,
     )
 except ImportError:
     _rust_interval_summary_data = None
     _rust_lattice_layer_sizes = None
+    _rust_linear_extension_count_data = None
     _rust_mobius_matrix_data = None
     _rust_principal_ideal_filter_sizes = None
     _rust_strict_zeta_transform_data = None
     _rust_transitive_successor_closure = None
+    _rust_width_data = None
     _rust_zeta_summary_data = None
     _rust_zeta_transform_data = None
 
@@ -162,6 +166,36 @@ def lattice_layer_sizes(
     return _python_lattice_layer_sizes(num_elements, cover_edges)
 
 
+def width_data(
+    num_elements: int,
+    cover_edges: Iterable[tuple[int, int]],
+) -> int:
+    """Return poset width from strict transitive comparability matching."""
+    cover_edges = list(cover_edges)
+    if _rust_width_data is not None:
+        return _rust_width_data(num_elements, cover_edges)
+
+    closure = _python_transitive_successor_closure(num_elements, cover_edges)
+    return _python_width(num_elements, closure)
+
+
+def linear_extension_count_data(
+    num_elements: int,
+    cover_edges: Iterable[tuple[int, int]],
+) -> int:
+    """Return the number of linear extensions using bitmask memoization."""
+    cover_edges = list(cover_edges)
+    if num_elements > 128:
+        raise ValueError(
+            "linear extension counting currently supports at most 128 elements"
+        )
+
+    if _rust_linear_extension_count_data is not None:
+        return _rust_linear_extension_count_data(num_elements, cover_edges)
+
+    return _python_linear_extension_count(num_elements, cover_edges)
+
+
 def interval_summary_data(
     num_elements: int,
     cover_edges: Iterable[tuple[int, int]],
@@ -291,6 +325,79 @@ def _python_strict_zeta_transform(
         transformed.append(total)
 
     return transformed
+
+
+def _python_width(
+    num_elements: int,
+    closure: list[set[int]],
+) -> int:
+    matched_right_to_left: dict[int, int] = {}
+
+    def can_match(left: int, visited_right: set[int]) -> bool:
+        for right in sorted(closure[left]):
+            if right in visited_right:
+                continue
+            visited_right.add(right)
+
+            if right not in matched_right_to_left:
+                matched_right_to_left[right] = left
+                return True
+
+            previous_left = matched_right_to_left[right]
+            if can_match(previous_left, visited_right):
+                matched_right_to_left[right] = left
+                return True
+
+        return False
+
+    matching_size = 0
+    for left in range(num_elements):
+        if can_match(left, set()):
+            matching_size += 1
+
+    return num_elements - matching_size
+
+
+def _python_linear_extension_count(
+    num_elements: int,
+    cover_edges: Iterable[tuple[int, int]],
+) -> int:
+    predecessor_masks = [0 for _ in range(num_elements)]
+    for source, target in cover_edges:
+        if source >= num_elements or target >= num_elements:
+            raise ValueError("cover edge index is outside the element range")
+        if source >= target:
+            raise ValueError("cover edge indices must follow topological order")
+
+        predecessor_masks[target] |= 1 << source
+
+    memo: dict[int, int] = {}
+    remaining = (1 << num_elements) - 1
+
+    def count(remaining_mask: int) -> int:
+        if remaining_mask == 0:
+            return 1
+
+        if remaining_mask in memo:
+            return memo[remaining_mask]
+
+        total = 0
+        for element_index in range(num_elements):
+            element_bit = 1 << element_index
+            if remaining_mask & element_bit == 0:
+                continue
+            if predecessor_masks[element_index] & remaining_mask != 0:
+                continue
+
+            total += count(remaining_mask ^ element_bit)
+
+        if total > (1 << 128) - 1:
+            raise ValueError("linear extension count exceeded u128")
+
+        memo[remaining_mask] = total
+        return total
+
+    return count(remaining)
 
 
 def _python_interval_sizes(

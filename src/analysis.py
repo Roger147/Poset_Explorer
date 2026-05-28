@@ -1,12 +1,14 @@
 from collections import Counter, defaultdict
-from typing import Any, Dict, FrozenSet, Mapping
+from typing import Any, Mapping
 
 from closure import (
     interval_summary_data,
     lattice_layer_sizes as backend_lattice_layer_sizes,
+    linear_extension_count_data,
     mobius_matrix_data,
     strict_zeta_transform_data,
     transitive_successor_closure,
+    width_data,
     zeta_summary_data,
     zeta_transform_data,
 )
@@ -22,34 +24,29 @@ class PosetAnalyzer:
         self._successor_closure: dict[str, set[str]] | None = None
         self._lattice_layer_sizes: list[int] | None = None
 
-    def count_linear_extensions(self) -> int:
+    def count_linear_extensions(self, max_elements: int | None = 24) -> int:
         """
-        Count linear extensions using canonical minimal-element selection
-        and memoization over dual order ideals.
+        Count linear extensions using bitmask memoization.
+
+        This computation is exponential in general. Empty posets and chains
+        return immediately; otherwise, max_elements guards the starting poset
+        size. Pass max_elements=None to override the guard.
         """
-        memo: Dict[FrozenSet[str], int] = {}
+        num_elements = self.num_elements()
 
-        def compute_paths(current_subposet: FrozenSet[str]) -> int:
-            if not current_subposet:
-                return 1
-                
-            if current_subposet in memo:
-                return memo[current_subposet]
+        if num_elements == 0:
+            return 1
 
-            # Canonical minimal elements of the subposet
-            minimal_nodes = self.poset.minimals_in_subposet(current_subposet)
-            
-            total_extensions = 0
-            for x in minimal_nodes:
-                next_state = current_subposet - {x}
-                total_extensions += compute_paths(next_state)
-            
-            # Cache the structural capacity of this specific order ideal state
-            memo[current_subposet] = total_extensions
-            return total_extensions
+        if self.width() == 1:
+            return 1
 
-        initial_subposet = frozenset(self.poset.elements)
-        return compute_paths(initial_subposet)
+        if max_elements is not None and num_elements > max_elements:
+            raise ValueError(
+                "Linear extension counting is exponential; pass "
+                "max_elements=None to override the element-count guard."
+            )
+
+        return linear_extension_count_data(num_elements, self.poset.indexed_relations())
 
     def num_elements(self) -> int:
         """Return the number of elements in the poset."""
@@ -340,31 +337,7 @@ class PosetAnalyzer:
         The matching graph uses transitive comparability pairs, not only stored
         cover relations, because any x < y can serve as a chain-cover link.
         """
-        matched_right_to_left: dict[str, str] = {}
-
-        def can_match(left: str, visited_right: set[str]) -> bool:
-            for right in self.comparable_successors(left):
-                if right in visited_right:
-                    continue
-                visited_right.add(right)
-
-                if right not in matched_right_to_left:
-                    matched_right_to_left[right] = left
-                    return True
-
-                previous_left = matched_right_to_left[right]
-                if can_match(previous_left, visited_right):
-                    matched_right_to_left[right] = left
-                    return True
-
-            return False
-
-        matching_size = 0
-        for left in self.poset.order:
-            if can_match(left, set()):
-                matching_size += 1
-
-        return self.num_elements() - matching_size
+        return width_data(self.num_elements(), self.poset.indexed_relations())
 
     def _validate_element(self, x: str) -> None:
         if x not in self.poset.elements:
