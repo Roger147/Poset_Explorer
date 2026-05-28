@@ -2,7 +2,7 @@
 mod closure;
 
 use closure::{
-    bitsets_to_index_lists, principal_sizes_from_bitsets,
+    bitsets_to_index_lists, interval_summary_data_from_bitsets, principal_sizes_from_bitsets,
     transitive_successor_closure_bitsets, zeta_summary_data_from_bitsets, ClosureError,
 };
 
@@ -68,5 +68,19 @@ fn zeta_summary_data_counts_strict_comparabilities_and_principal_sizes() {
     assert_eq!(
         zeta_summary_data_from_bitsets(4, &closure),
         (5, vec![1, 2, 2, 4], vec![4, 2, 2, 1]),
+    );
+}
+
+#[test]
+fn interval_summary_data_counts_closed_interval_features() {
+    let closure = transitive_successor_closure_bitsets(
+        4,
+        vec![(0, 1), (0, 2), (1, 3), (2, 3)],
+    )
+    .unwrap();
+
+    assert_eq!(
+        interval_summary_data_from_bitsets(4, &closure),
+        (9, 4, 5, 4, 1, 4, 16.0 / 9.0, vec![(1, 4), (2, 4), (4, 1)]),
     );
 }

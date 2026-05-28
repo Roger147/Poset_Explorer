@@ -2,6 +2,8 @@ from collections import Counter, defaultdict
 from typing import Any, Dict, FrozenSet, Mapping
 
 from closure import (
+    interval_summary_data,
+    lattice_layer_sizes as backend_lattice_layer_sizes,
     transitive_successor_closure,
     zeta_summary_data,
 )
@@ -14,6 +16,7 @@ class PosetAnalyzer:
         self.poset = poset
         self._indexed_successor_closure: list[set[int]] | None = None
         self._successor_closure: dict[str, set[str]] | None = None
+        self._lattice_layer_sizes: list[int] | None = None
 
     def count_linear_extensions(self) -> int:
         """
@@ -124,33 +127,7 @@ class PosetAnalyzer:
         This summarizes the bounded local subposets without materializing a
         large interval table in the public result.
         """
-        interval_sizes = [
-            len(self.interval(x, y))
-            for x, y in self._interval_pairs()
-        ]
-
-        if not interval_sizes:
-            return {
-                "num_intervals": 0,
-                "num_trivial_intervals": 0,
-                "num_nontrivial_intervals": 0,
-                "num_cover_intervals": 0,
-                "min_interval_size": 0,
-                "max_interval_size": 0,
-                "mean_interval_size": 0,
-                "interval_size_histogram": {},
-            }
-
-        return {
-            "num_intervals": len(interval_sizes),
-            "num_trivial_intervals": sum(size == 1 for size in interval_sizes),
-            "num_nontrivial_intervals": sum(size > 1 for size in interval_sizes),
-            "num_cover_intervals": sum(size == 2 for size in interval_sizes),
-            "min_interval_size": min(interval_sizes),
-            "max_interval_size": max(interval_sizes),
-            "mean_interval_size": sum(interval_sizes) / len(interval_sizes),
-            "interval_size_histogram": self._histogram(interval_sizes),
-        }
+        return interval_summary_data(self.num_elements(), self.poset.indexed_relations())
 
     def mobius(self, x: str, y: str) -> int:
         """
@@ -482,8 +459,13 @@ class PosetAnalyzer:
 
     def lattice_layer_sizes(self) -> list[int]:
         """Return the number of ideals at each rank of J(P)."""
-        layers = self.get_lattice_layers()
-        return [len(layers[k]) for k in sorted(layers)]
+        if self._lattice_layer_sizes is None:
+            self._lattice_layer_sizes = backend_lattice_layer_sizes(
+                self.num_elements(),
+                self.poset.indexed_relations(),
+            )
+
+        return list(self._lattice_layer_sizes)
 
     def num_ideals(self) -> int:
         """Return the number of order ideals in J(P)."""

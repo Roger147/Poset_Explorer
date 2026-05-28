@@ -80,10 +80,72 @@ pub fn zeta_summary_data_from_bitsets(
     (strict_comparability_count, ideal_sizes, filter_sizes)
 }
 
+pub fn interval_summary_data_from_bitsets(
+    num_elements: usize,
+    closure: &[Vec<u64>],
+) -> (usize, usize, usize, usize, usize, usize, f64, Vec<(usize, usize)>) {
+    if num_elements == 0 {
+        return (0, 0, 0, 0, 0, 0, 0.0, Vec::new());
+    }
+
+    let mut interval_sizes = Vec::new();
+
+    for left in 0..num_elements {
+        interval_sizes.push(1);
+
+        for right in 0..num_elements {
+            if !bit_is_set(&closure[left], right) {
+                continue;
+            }
+
+            let size = (0..num_elements)
+                .filter(|middle| {
+                    (*middle == left || bit_is_set(&closure[left], *middle))
+                        && (*middle == right || bit_is_set(&closure[*middle], right))
+                })
+                .count();
+            interval_sizes.push(size);
+        }
+    }
+
+    let num_intervals = interval_sizes.len();
+    let num_trivial = interval_sizes.iter().filter(|size| **size == 1).count();
+    let num_nontrivial = interval_sizes.iter().filter(|size| **size > 1).count();
+    let num_cover = interval_sizes.iter().filter(|size| **size == 2).count();
+    let min_size = *interval_sizes.iter().min().unwrap_or(&0);
+    let max_size = *interval_sizes.iter().max().unwrap_or(&0);
+    let mean_size = interval_sizes.iter().sum::<usize>() as f64 / num_intervals as f64;
+    let histogram = histogram(&interval_sizes);
+
+    (
+        num_intervals,
+        num_trivial,
+        num_nontrivial,
+        num_cover,
+        min_size,
+        max_size,
+        mean_size,
+        histogram,
+    )
+}
+
 fn set_bit(bitset: &mut [u64], index: usize) {
     bitset[index / 64] |= 1_u64 << (index % 64);
 }
 
 fn bit_is_set(bitset: &[u64], index: usize) -> bool {
     (bitset[index / 64] & (1_u64 << (index % 64))) != 0
+}
+
+fn histogram(values: &[usize]) -> Vec<(usize, usize)> {
+    let mut histogram = Vec::new();
+
+    for value in values {
+        match histogram.binary_search_by_key(value, |(key, _)| *key) {
+            Ok(index) => histogram[index].1 += 1,
+            Err(index) => histogram.insert(index, (*value, 1)),
+        }
+    }
+
+    histogram
 }

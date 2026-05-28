@@ -12,5 +12,9 @@ crate-type = ["cdylib"]
 name = "closure"
 path = "rust/tests/closure.rs"
 
+[[test]]
+name = "ideals"
+path = "rust/tests/ideals.rs"
+
 [dependencies]
 pyo3 = { version = "0.23", features = ["extension-module"] }

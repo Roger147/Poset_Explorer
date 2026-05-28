@@ -9,11 +9,15 @@ from collections.abc import Iterable
 
 try:
     from _poset_explorer_rust import (
+        interval_summary_data as _rust_interval_summary_data,
+        lattice_layer_sizes as _rust_lattice_layer_sizes,
         principal_ideal_filter_sizes as _rust_principal_ideal_filter_sizes,
         transitive_successor_closure as _rust_transitive_successor_closure,
         zeta_summary_data as _rust_zeta_summary_data,
     )
 except ImportError:
+    _rust_interval_summary_data = None
+    _rust_lattice_layer_sizes = None
     _rust_principal_ideal_filter_sizes = None
     _rust_transitive_successor_closure = None
     _rust_zeta_summary_data = None
@@ -98,6 +102,51 @@ def zeta_summary_data(
     return sum(len(successors) for successors in closure), ideal_sizes, filter_sizes
 
 
+def lattice_layer_sizes(
+    num_elements: int,
+    cover_edges: Iterable[tuple[int, int]],
+) -> list[int]:
+    """Return order-ideal lattice layer sizes for an indexed DAG."""
+    cover_edges = list(cover_edges)
+    if _rust_lattice_layer_sizes is not None:
+        return list(_rust_lattice_layer_sizes(num_elements, cover_edges))
+
+    return _python_lattice_layer_sizes(num_elements, cover_edges)
+
+
+def interval_summary_data(
+    num_elements: int,
+    cover_edges: Iterable[tuple[int, int]],
+) -> dict:
+    """Return compact closed-interval summary data for an indexed DAG."""
+    cover_edges = list(cover_edges)
+    if _rust_interval_summary_data is not None:
+        (
+            num_intervals,
+            num_trivial,
+            num_nontrivial,
+            num_cover,
+            min_size,
+            max_size,
+            mean_size,
+            histogram,
+        ) = _rust_interval_summary_data(num_elements, cover_edges)
+        return _format_interval_summary(
+            num_intervals,
+            num_trivial,
+            num_nontrivial,
+            num_cover,
+            min_size,
+            max_size,
+            mean_size,
+            dict(histogram),
+        )
+
+    closure = _python_transitive_successor_closure(num_elements, cover_edges)
+    interval_sizes = _python_interval_sizes(num_elements, closure)
+    return _interval_summary_from_sizes(interval_sizes)
+
+
 def _python_transitive_successor_closure(
     num_elements: int,
     cover_edges: Iterable[tuple[int, int]],
@@ -113,3 +162,97 @@ def _python_transitive_successor_closure(
             closure[source].update(closure[child])
 
     return closure
+
+
+def _python_lattice_layer_sizes(
+    num_elements: int,
+    cover_edges: Iterable[tuple[int, int]],
+) -> list[int]:
+    predecessor_sets = [set() for _ in range(num_elements)]
+    for source, target in cover_edges:
+        predecessor_sets[target].add(source)
+
+    layer_sizes = []
+    current_layer = {frozenset()}
+
+    while current_layer:
+        layer_sizes.append(len(current_layer))
+        next_layer = set()
+
+        for ideal in current_layer:
+            for element_index in range(num_elements):
+                if element_index in ideal:
+                    continue
+                if not predecessor_sets[element_index].issubset(ideal):
+                    continue
+
+                next_layer.add(frozenset((*ideal, element_index)))
+
+        current_layer = next_layer
+
+    return layer_sizes
+
+
+def _python_interval_sizes(
+    num_elements: int,
+    closure: list[set[int]],
+) -> list[int]:
+    interval_sizes = []
+
+    for left in range(num_elements):
+        interval_sizes.append(1)
+
+        for right in sorted(closure[left]):
+            size = sum(
+                (middle == left or middle in closure[left])
+                and (middle == right or right in closure[middle])
+                for middle in range(num_elements)
+            )
+            interval_sizes.append(size)
+
+    return interval_sizes
+
+
+def _interval_summary_from_sizes(interval_sizes: list[int]) -> dict:
+    if not interval_sizes:
+        return _format_interval_summary(0, 0, 0, 0, 0, 0, 0, {})
+
+    return _format_interval_summary(
+        len(interval_sizes),
+        sum(size == 1 for size in interval_sizes),
+        sum(size > 1 for size in interval_sizes),
+        sum(size == 2 for size in interval_sizes),
+        min(interval_sizes),
+        max(interval_sizes),
+        sum(interval_sizes) / len(interval_sizes),
+        _histogram(interval_sizes),
+    )
+
+
+def _format_interval_summary(
+    num_intervals: int,
+    num_trivial: int,
+    num_nontrivial: int,
+    num_cover: int,
+    min_size: int,
+    max_size: int,
+    mean_size: float,
+    histogram: dict[int, int],
+) -> dict:
+    return {
+        "num_intervals": num_intervals,
+        "num_trivial_intervals": num_trivial,
+        "num_nontrivial_intervals": num_nontrivial,
+        "num_cover_intervals": num_cover,
+        "min_interval_size": min_size,
+        "max_interval_size": max_size,
+        "mean_interval_size": mean_size,
+        "interval_size_histogram": histogram,
+    }
+
+
+def _histogram(values: list[int]) -> dict[int, int]:
+    return {
+        value: values.count(value)
+        for value in sorted(set(values))
+    }
