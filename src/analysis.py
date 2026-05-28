@@ -4,6 +4,7 @@ from typing import Any, Dict, FrozenSet, Mapping
 from closure import (
     interval_summary_data,
     lattice_layer_sizes as backend_lattice_layer_sizes,
+    mobius_matrix_data,
     transitive_successor_closure,
     zeta_summary_data,
 )
@@ -15,6 +16,7 @@ class PosetAnalyzer:
     def __init__(self, poset):
         self.poset = poset
         self._indexed_successor_closure: list[set[int]] | None = None
+        self._indexed_mobius_matrix: list[list[int]] | None = None
         self._successor_closure: dict[str, set[str]] | None = None
         self._lattice_layer_sizes: list[int] | None = None
 
@@ -102,22 +104,28 @@ class PosetAnalyzer:
         """Return whether x <= y in the transitive order."""
         self._validate_element(x)
         self._validate_element(y)
-        if x == y:
-            return True
-
-        closure = self._indexed_transitive_successor_closure()
-        return self.poset.element_to_index[y] in closure[self.poset.element_to_index[x]]
+        return self._is_less_equal_index(
+            self.poset.element_to_index[x],
+            self.poset.element_to_index[y],
+        )
 
     def interval(self, x: str, y: str) -> list[str]:
         """Return the closed interval [x, y] in canonical order."""
         self._validate_element(x)
         self._validate_element(y)
-        if not self.is_less_equal(x, y):
+        left_index = self.poset.element_to_index[x]
+        right_index = self.poset.element_to_index[y]
+
+        if not self._is_less_equal_index(left_index, right_index):
             return []
 
         return [
-            z for z in self.poset.order
-            if self.is_less_equal(x, z) and self.is_less_equal(z, y)
+            self.poset.index_to_element[middle_index]
+            for middle_index in range(self.num_elements())
+            if (
+                self._is_less_equal_index(left_index, middle_index)
+                and self._is_less_equal_index(middle_index, right_index)
+            )
         ]
 
     def interval_summary(self) -> dict[str, Any]:
@@ -140,28 +148,11 @@ class PosetAnalyzer:
         self._validate_element(x)
         self._validate_element(y)
 
-        if not self.is_less_equal(x, y):
-            return 0
-
-        memo: dict[tuple[str, str], int] = {}
-
-        def compute(left: str, right: str) -> int:
-            if left == right:
-                return 1
-
-            key = (left, right)
-            if key in memo:
-                return memo[key]
-
-            total = 0
-            for z in self.interval(left, right):
-                if z != right:
-                    total += compute(left, z)
-
-            memo[key] = -total
-            return memo[key]
-
-        return compute(x, y)
+        return self._indexed_mobius_matrix_data()[
+            self.poset.element_to_index[x]
+        ][
+            self.poset.element_to_index[y]
+        ]
 
     def mobius_matrix(self) -> dict[tuple[str, str], int]:
         """
@@ -169,10 +160,14 @@ class PosetAnalyzer:
 
         This is the incidence-algebra inverse of zeta_matrix().
         """
+        matrix = self._indexed_mobius_matrix_data()
         return {
-            (x, y): self.mobius(x, y)
-            for x in self.poset.order
-            for y in self.poset.order
+            (
+                self.poset.index_to_element[left_index],
+                self.poset.index_to_element[right_index],
+            ): matrix[left_index][right_index]
+            for left_index in range(self.num_elements())
+            for right_index in range(self.num_elements())
         }
 
     def zeta_matrix(self) -> dict[tuple[str, str], int]:
@@ -229,17 +224,18 @@ class PosetAnalyzer:
         The full Mobius matrix is intentionally exposed only through
         mobius_matrix(), because it grows quadratically with the poset size.
         """
-        values = [
-            self.mobius(x, y)
-            for x, y in self._interval_pairs()
-        ]
+        matrix = self._indexed_mobius_matrix_data()
+        interval_pairs = self._interval_index_pairs()
+        values = [matrix[left][right] for left, right in interval_pairs]
         abs_values = [abs(value) for value in values]
         ranks = self._rank_levels_if_ranked()
         by_rank_distance: dict[int, list[int]] = defaultdict(list)
 
         if ranks is not None:
-            for x, y in self._interval_pairs():
-                by_rank_distance[ranks[y] - ranks[x]].append(self.mobius(x, y))
+            for left, right in interval_pairs:
+                x = self.poset.index_to_element[left]
+                y = self.poset.index_to_element[right]
+                by_rank_distance[ranks[y] - ranks[x]].append(matrix[left][right])
 
         if not values:
             return {
@@ -318,9 +314,14 @@ class PosetAnalyzer:
         Invert a closed zeta transform: f(y) = sum_{x <= y} mu(x, y) g(x).
         """
         self._validate_value_keys(values)
+        matrix = self._indexed_mobius_matrix_data()
         return {
-            y: sum(self.mobius(x, y) * values[x] for x in self.poset.order)
-            for y in self.poset.order
+            self.poset.index_to_element[right_index]: sum(
+                matrix[left_index][right_index]
+                * values[self.poset.index_to_element[left_index]]
+                for left_index in range(self.num_elements())
+            )
+            for right_index in range(self.num_elements())
         }
 
     def width(self) -> int:
@@ -387,6 +388,30 @@ class PosetAnalyzer:
             )
 
         return self._indexed_successor_closure
+
+    def _indexed_mobius_matrix_data(self) -> list[list[int]]:
+        if self._indexed_mobius_matrix is None:
+            self._indexed_mobius_matrix = mobius_matrix_data(
+                self.num_elements(),
+                self.poset.indexed_relations(),
+            )
+
+        return self._indexed_mobius_matrix
+
+    def _is_less_equal_index(self, left_index: int, right_index: int) -> bool:
+        if left_index == right_index:
+            return True
+
+        closure = self._indexed_transitive_successor_closure()
+        return right_index in closure[left_index]
+
+    def _interval_index_pairs(self) -> list[tuple[int, int]]:
+        return [
+            (left, right)
+            for left in range(self.num_elements())
+            for right in range(self.num_elements())
+            if self._is_less_equal_index(left, right)
+        ]
 
     def _interval_pairs(self) -> list[tuple[str, str]]:
         return [

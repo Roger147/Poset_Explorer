@@ -2,6 +2,7 @@ import closure
 
 from closure import (
     interval_summary_data,
+    mobius_matrix_data,
     principal_ideal_filter_sizes,
     transitive_successor_closure,
     zeta_summary_data,
@@ -155,3 +156,39 @@ def test_interval_summary_data_uses_rust_backend_when_available(monkeypatch):
         "mean_interval_size": 1.5,
         "interval_size_histogram": {1: 1, 2: 1},
     }
+
+
+def test_mobius_matrix_data_reports_indexed_incidence_inverse():
+    assert mobius_matrix_data(
+        4,
+        [
+            (0, 1),
+            (0, 2),
+            (1, 3),
+            (2, 3),
+        ],
+    ) == [
+        [1, -1, -1, 1],
+        [0, 1, 0, -1],
+        [0, 0, 1, -1],
+        [0, 0, 0, 1],
+    ]
+
+
+def test_mobius_matrix_data_uses_rust_backend_when_available(monkeypatch):
+    calls = []
+
+    def fake_rust_backend(num_elements, cover_edges):
+        calls.append((num_elements, cover_edges))
+        return [[1, -1], [0, 1]]
+
+    monkeypatch.setattr(
+        closure,
+        "_rust_mobius_matrix_data",
+        fake_rust_backend,
+    )
+
+    result = mobius_matrix_data(2, [(0, 1)])
+
+    assert calls == [(2, [(0, 1)])]
+    assert result == [[1, -1], [0, 1]]

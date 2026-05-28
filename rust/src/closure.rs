@@ -73,7 +73,12 @@ pub fn zeta_summary_data_from_bitsets(
 ) -> (usize, Vec<usize>, Vec<usize>) {
     let strict_comparability_count = closure
         .iter()
-        .map(|bitset| bitset.iter().map(|word| word.count_ones() as usize).sum::<usize>())
+        .map(|bitset| {
+            bitset
+                .iter()
+                .map(|word| word.count_ones() as usize)
+                .sum::<usize>()
+        })
         .sum();
     let (ideal_sizes, filter_sizes) = principal_sizes_from_bitsets(num_elements, closure);
 
@@ -83,7 +88,16 @@ pub fn zeta_summary_data_from_bitsets(
 pub fn interval_summary_data_from_bitsets(
     num_elements: usize,
     closure: &[Vec<u64>],
-) -> (usize, usize, usize, usize, usize, usize, f64, Vec<(usize, usize)>) {
+) -> (
+    usize,
+    usize,
+    usize,
+    usize,
+    usize,
+    usize,
+    f64,
+    Vec<(usize, usize)>,
+) {
     if num_elements == 0 {
         return (0, 0, 0, 0, 0, 0, 0.0, Vec::new());
     }
@@ -127,6 +141,33 @@ pub fn interval_summary_data_from_bitsets(
         mean_size,
         histogram,
     )
+}
+
+pub fn mobius_matrix_from_bitsets(num_elements: usize, closure: &[Vec<u64>]) -> Vec<Vec<i64>> {
+    let mut matrix = vec![vec![0_i64; num_elements]; num_elements];
+
+    for left in 0..num_elements {
+        matrix[left][left] = 1;
+
+        for right in (left + 1)..num_elements {
+            if !bit_is_set(&closure[left], right) {
+                continue;
+            }
+
+            let mut total = 0_i64;
+            for middle in left..right {
+                if (middle == left || bit_is_set(&closure[left], middle))
+                    && bit_is_set(&closure[middle], right)
+                {
+                    total += matrix[left][middle];
+                }
+            }
+
+            matrix[left][right] = -total;
+        }
+    }
+
+    matrix
 }
 
 fn set_bit(bitset: &mut [u64], index: usize) {

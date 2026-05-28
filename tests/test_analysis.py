@@ -107,6 +107,20 @@ def test_comparability_queries_use_indexed_closure_cache():
     assert analyzer._successor_closure is None
 
 
+def test_mobius_queries_use_indexed_matrix_cache():
+    analyzer = PosetAnalyzer(chain(3))
+
+    assert analyzer._indexed_mobius_matrix is None
+
+    assert analyzer.mobius("x1", "x3") == 0
+
+    assert analyzer._indexed_mobius_matrix == [
+        [1, -1, 0],
+        [0, 1, -1],
+        [0, 0, 1],
+    ]
+
+
 def test_chain_mobius_values_use_closed_intervals():
     analyzer = PosetAnalyzer(chain(3))
 

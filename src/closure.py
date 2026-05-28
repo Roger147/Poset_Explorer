@@ -11,6 +11,7 @@ try:
     from _poset_explorer_rust import (
         interval_summary_data as _rust_interval_summary_data,
         lattice_layer_sizes as _rust_lattice_layer_sizes,
+        mobius_matrix_data as _rust_mobius_matrix_data,
         principal_ideal_filter_sizes as _rust_principal_ideal_filter_sizes,
         transitive_successor_closure as _rust_transitive_successor_closure,
         zeta_summary_data as _rust_zeta_summary_data,
@@ -18,6 +19,7 @@ try:
 except ImportError:
     _rust_interval_summary_data = None
     _rust_lattice_layer_sizes = None
+    _rust_mobius_matrix_data = None
     _rust_principal_ideal_filter_sizes = None
     _rust_transitive_successor_closure = None
     _rust_zeta_summary_data = None
@@ -147,6 +149,22 @@ def interval_summary_data(
     return _interval_summary_from_sizes(interval_sizes)
 
 
+def mobius_matrix_data(
+    num_elements: int,
+    cover_edges: Iterable[tuple[int, int]],
+) -> list[list[int]]:
+    """Return indexed Mobius values for every ordered pair in an indexed DAG."""
+    cover_edges = list(cover_edges)
+    if _rust_mobius_matrix_data is not None:
+        return [
+            list(row)
+            for row in _rust_mobius_matrix_data(num_elements, cover_edges)
+        ]
+
+    closure = _python_transitive_successor_closure(num_elements, cover_edges)
+    return _python_mobius_matrix(num_elements, closure)
+
+
 def _python_transitive_successor_closure(
     num_elements: int,
     cover_edges: Iterable[tuple[int, int]],
@@ -211,6 +229,32 @@ def _python_interval_sizes(
             interval_sizes.append(size)
 
     return interval_sizes
+
+
+def _python_mobius_matrix(
+    num_elements: int,
+    closure: list[set[int]],
+) -> list[list[int]]:
+    matrix = [[0 for _ in range(num_elements)] for _ in range(num_elements)]
+
+    for left in range(num_elements):
+        matrix[left][left] = 1
+
+        for right in range(left + 1, num_elements):
+            if right not in closure[left]:
+                continue
+
+            total = sum(
+                matrix[left][middle]
+                for middle in range(left, right)
+                if (
+                    (middle == left or middle in closure[left])
+                    and right in closure[middle]
+                )
+            )
+            matrix[left][right] = -total
+
+    return matrix
 
 
 def _interval_summary_from_sizes(interval_sizes: list[int]) -> dict:

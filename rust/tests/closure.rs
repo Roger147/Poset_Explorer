@@ -2,17 +2,15 @@
 mod closure;
 
 use closure::{
-    bitsets_to_index_lists, interval_summary_data_from_bitsets, principal_sizes_from_bitsets,
-    transitive_successor_closure_bitsets, zeta_summary_data_from_bitsets, ClosureError,
+    bitsets_to_index_lists, interval_summary_data_from_bitsets, mobius_matrix_from_bitsets,
+    principal_sizes_from_bitsets, transitive_successor_closure_bitsets,
+    zeta_summary_data_from_bitsets, ClosureError,
 };
 
 #[test]
 fn closure_uses_bitsets_for_transitive_successors() {
-    let closure = transitive_successor_closure_bitsets(
-        4,
-        vec![(0, 1), (0, 2), (1, 3), (2, 3)],
-    )
-    .unwrap();
+    let closure =
+        transitive_successor_closure_bitsets(4, vec![(0, 1), (0, 2), (1, 3), (2, 3)]).unwrap();
 
     assert_eq!(
         bitsets_to_index_lists(4, &closure),
@@ -45,11 +43,8 @@ fn closure_rejects_edges_outside_topological_order() {
 
 #[test]
 fn principal_sizes_count_reflexive_ideal_and_filter_members() {
-    let closure = transitive_successor_closure_bitsets(
-        4,
-        vec![(0, 1), (0, 2), (1, 3), (2, 3)],
-    )
-    .unwrap();
+    let closure =
+        transitive_successor_closure_bitsets(4, vec![(0, 1), (0, 2), (1, 3), (2, 3)]).unwrap();
 
     assert_eq!(
         principal_sizes_from_bitsets(4, &closure),
@@ -59,11 +54,8 @@ fn principal_sizes_count_reflexive_ideal_and_filter_members() {
 
 #[test]
 fn zeta_summary_data_counts_strict_comparabilities_and_principal_sizes() {
-    let closure = transitive_successor_closure_bitsets(
-        4,
-        vec![(0, 1), (0, 2), (1, 3), (2, 3)],
-    )
-    .unwrap();
+    let closure =
+        transitive_successor_closure_bitsets(4, vec![(0, 1), (0, 2), (1, 3), (2, 3)]).unwrap();
 
     assert_eq!(
         zeta_summary_data_from_bitsets(4, &closure),
@@ -73,14 +65,27 @@ fn zeta_summary_data_counts_strict_comparabilities_and_principal_sizes() {
 
 #[test]
 fn interval_summary_data_counts_closed_interval_features() {
-    let closure = transitive_successor_closure_bitsets(
-        4,
-        vec![(0, 1), (0, 2), (1, 3), (2, 3)],
-    )
-    .unwrap();
+    let closure =
+        transitive_successor_closure_bitsets(4, vec![(0, 1), (0, 2), (1, 3), (2, 3)]).unwrap();
 
     assert_eq!(
         interval_summary_data_from_bitsets(4, &closure),
         (9, 4, 5, 4, 1, 4, 16.0 / 9.0, vec![(1, 4), (2, 4), (4, 1)]),
+    );
+}
+
+#[test]
+fn mobius_matrix_inverts_zeta_over_indexed_closure() {
+    let closure =
+        transitive_successor_closure_bitsets(4, vec![(0, 1), (0, 2), (1, 3), (2, 3)]).unwrap();
+
+    assert_eq!(
+        mobius_matrix_from_bitsets(4, &closure),
+        vec![
+            vec![1, -1, -1, 1],
+            vec![0, 1, 0, -1],
+            vec![0, 0, 1, -1],
+            vec![0, 0, 0, 1],
+        ],
     );
 }
