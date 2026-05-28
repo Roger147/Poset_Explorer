@@ -30,7 +30,9 @@ class PosetAnalyzer:
 
         This computation is exponential in general. Empty posets and chains
         return immediately; otherwise, max_elements guards the starting poset
-        size. Pass max_elements=None to override the guard.
+        size. Pass max_elements=None only when you have checked the structure
+        carefully: non-chain posets can exhaust time or memory very quickly,
+        even with the Rust backend.
         """
         num_elements = self.num_elements()
 
