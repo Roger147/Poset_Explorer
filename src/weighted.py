@@ -3,6 +3,7 @@ from collections.abc import Callable, Mapping
 
 from analysis import PosetAnalyzer
 from closure import max_antichain_score_data
+from intervals import IntervalConfig, WeightedIntervalAnalyzer
 
 
 Number = int | float
@@ -139,6 +140,7 @@ class WeightedPosetAnalyzer:
         self.weighted_poset = weighted_poset
         self.poset = weighted_poset.poset
         self.base = PosetAnalyzer(self.poset)
+        self.intervals = WeightedIntervalAnalyzer(weighted_poset)
         self._lattice_layers = None
         self._ideal_scores = None
 
@@ -269,18 +271,11 @@ class WeightedPosetAnalyzer:
         Incomparable endpoints have interval weight 0, matching the base
         analyzer's empty interval behavior.
         """
-        return sum(
-            self.weighted_poset.element_weight(element)
-            for element in self.base.interval(x, y)
-        )
+        return self.intervals.element_sum(x, y, IntervalConfig.closed())
 
     def open_interval_weight(self, x: str, y: str) -> Number:
         """Return the total element weight over the open interval (x, y)."""
-        return sum(
-            self.weighted_poset.element_weight(element)
-            for element in self.base.interval(x, y)
-            if element not in {x, y}
-        )
+        return self.intervals.element_sum(x, y, IntervalConfig.open())
 
     def get_lattice_layers(self):
         """Return base analyzer lattice layers, cached for reuse."""
