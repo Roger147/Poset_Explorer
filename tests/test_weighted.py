@@ -197,6 +197,15 @@ def test_weighted_width_returns_maximum_antichain_element_weight():
     assert WeightedPosetAnalyzer(weighted).weighted_width() == 30
 
 
+def test_weighted_width_supports_float_element_weights():
+    weighted = WeightedPoset(
+        diamond(),
+        element_weights={"A": 1.0, "B": 1.5, "C": 2.25, "D": 1.0},
+    )
+
+    assert WeightedPosetAnalyzer(weighted).weighted_width() == 3.75
+
+
 def test_weighted_width_uses_transitive_comparability():
     weighted = WeightedPoset(
         chain(3),

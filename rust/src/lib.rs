@@ -1,6 +1,7 @@
 mod closure;
 mod extensions;
 mod ideals;
+mod weighted;
 
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
@@ -13,6 +14,9 @@ use closure::{
 };
 use extensions::{linear_extension_count as rust_linear_extension_count, ExtensionError};
 use ideals::{lattice_layer_sizes as rust_lattice_layer_sizes, IdealError};
+use weighted::{
+    max_antichain_score_from_bitsets as rust_max_antichain_score_from_bitsets, WeightedError,
+};
 
 #[pyfunction]
 fn transitive_successor_closure(
@@ -87,6 +91,24 @@ fn width_data(num_elements: usize, cover_edges: Vec<(usize, usize)>) -> PyResult
     let closure = transitive_successor_closure_bitsets(num_elements, cover_edges)
         .map_err(closure_error_to_py_value_error)?;
     Ok(width_from_bitsets(num_elements, &closure))
+}
+
+#[pyfunction]
+fn max_antichain_score_data(
+    num_elements: usize,
+    cover_edges: Vec<(usize, usize)>,
+    element_scores: Vec<f64>,
+) -> PyResult<f64> {
+    if element_scores.len() != num_elements {
+        return Err(PyValueError::new_err(
+            "score vector length must match the element count",
+        ));
+    }
+
+    let closure = transitive_successor_closure_bitsets(num_elements, cover_edges)
+        .map_err(closure_error_to_py_value_error)?;
+    rust_max_antichain_score_from_bitsets(num_elements, &closure, &element_scores)
+        .map_err(weighted_error_to_py_value_error)
 }
 
 #[pyfunction(signature = (num_elements, cover_edges, max_states=None))]
@@ -168,6 +190,13 @@ fn extension_error_to_py_value_error(error: ExtensionError) -> PyErr {
     PyValueError::new_err(message)
 }
 
+fn weighted_error_to_py_value_error(error: WeightedError) -> PyErr {
+    let message = match error {
+        WeightedError::InvalidWeight => "element scores must be finite numbers",
+    };
+    PyValueError::new_err(message)
+}
+
 #[pymodule]
 fn _poset_explorer_rust(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(transitive_successor_closure, module)?)?;
@@ -176,6 +205,7 @@ fn _poset_explorer_rust(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_function(wrap_pyfunction!(zeta_transform_data, module)?)?;
     module.add_function(wrap_pyfunction!(strict_zeta_transform_data, module)?)?;
     module.add_function(wrap_pyfunction!(width_data, module)?)?;
+    module.add_function(wrap_pyfunction!(max_antichain_score_data, module)?)?;
     module.add_function(wrap_pyfunction!(linear_extension_count_data, module)?)?;
     module.add_function(wrap_pyfunction!(interval_summary_data, module)?)?;
     module.add_function(wrap_pyfunction!(mobius_matrix_data, module)?)?;

@@ -1,7 +1,8 @@
-from collections import Counter, deque
+from collections import Counter
 from collections.abc import Callable, Mapping
 
 from analysis import PosetAnalyzer
+from closure import max_antichain_score_data
 
 
 Number = int | float
@@ -223,37 +224,17 @@ class WeightedPosetAnalyzer:
         Return the maximum signed score of an antichain.
 
         Negative element scores are allowed. The empty antichain is allowed, so
-        the result is never below 0. Edge weights are ignored.
+        the result is never below 0. Edge weights are ignored. Scores are
+        computed through an f64-compatible backend path.
         """
-        element_scores = {
-            element: self.weighted_poset.element_weight(element)
-            for element in self.poset.order
-        }
-
-        positive_scores = {
-            element: max(score, 0)
-            for element, score in element_scores.items()
-        }
-        total_weight = sum(positive_scores.values())
-        if not self.poset.elements:
-            return 0
-
-        source = ("source", "s")
-        sink = ("sink", "t")
-        infinite_capacity = total_weight + 1
-        capacities = {}
-
-        for element, weight in positive_scores.items():
-            left = ("out", element)
-            right = ("in", element)
-            capacities[(source, left)] = weight
-            capacities[(right, sink)] = weight
-
-            for successor in self.base.comparable_successors(element):
-                capacities[(left, ("in", successor))] = infinite_capacity
-
-        minimum_vertex_cover_weight = self._max_flow(capacities, source, sink)
-        return total_weight - minimum_vertex_cover_weight
+        return max_antichain_score_data(
+            len(self.poset.order),
+            self.poset.indexed_relations(),
+            [
+                self.weighted_poset.element_weight(element)
+                for element in self.poset.order
+            ],
+        )
 
     def zeta_transform(self) -> dict[str, Number]:
         """
@@ -392,57 +373,6 @@ class WeightedPosetAnalyzer:
             for source, target in self.weighted_poset.cover_edges():
                 if self.weighted_poset.edge_weight(source, target) < 0:
                     raise ValueError("Chain weight requires nonnegative edge weights.")
-
-    def _max_flow(
-        self,
-        capacities: Mapping[tuple[object, object], Number],
-        source,
-        sink,
-    ) -> Number:
-        residual = {}
-        adjacency = {}
-
-        for (start, end), capacity in capacities.items():
-            residual[(start, end)] = residual.get((start, end), 0) + capacity
-            residual.setdefault((end, start), 0)
-            adjacency.setdefault(start, set()).add(end)
-            adjacency.setdefault(end, set()).add(start)
-
-        flow = 0
-        while True:
-            parent = {source: None}
-            queue = deque([source])
-
-            while queue and sink not in parent:
-                current = queue.popleft()
-                for neighbor in adjacency.get(current, ()):
-                    if neighbor not in parent and residual[(current, neighbor)] > 0:
-                        parent[neighbor] = current
-                        queue.append(neighbor)
-
-            if sink not in parent:
-                return flow
-
-            path_capacity = None
-            current = sink
-            while current != source:
-                previous = parent[current]
-                edge_capacity = residual[(previous, current)]
-                path_capacity = (
-                    edge_capacity
-                    if path_capacity is None
-                    else min(path_capacity, edge_capacity)
-                )
-                current = previous
-
-            current = sink
-            while current != source:
-                previous = parent[current]
-                residual[(previous, current)] -= path_capacity
-                residual[(current, previous)] += path_capacity
-                current = previous
-
-            flow += path_capacity
 
     def _weight_summary(
         self,

@@ -3,6 +3,7 @@ import closure
 from closure import (
     interval_summary_data,
     linear_extension_count_data,
+    max_antichain_score_data,
     mobius_matrix_data,
     principal_ideal_filter_sizes,
     strict_zeta_transform_data,
@@ -200,6 +201,38 @@ def test_width_data_uses_rust_backend_when_available(monkeypatch):
 
     assert calls == [(3, [(0, 1), (1, 2)])]
     assert result == 2
+
+
+def test_max_antichain_score_data_reports_weighted_width_score():
+    assert (
+        max_antichain_score_data(
+            4,
+            [(0, 1), (0, 2), (1, 3), (2, 3)],
+            [1, 10, 20, 1],
+        )
+        == 30.0
+    )
+    assert max_antichain_score_data(3, [(0, 1), (1, 2)], [100, 1, 100]) == 100.0
+    assert max_antichain_score_data(3, [], [10, -100, 10]) == 20.0
+
+
+def test_max_antichain_score_data_uses_rust_backend_when_available(monkeypatch):
+    calls = []
+
+    def fake_rust_backend(num_elements, cover_edges, scores):
+        calls.append((num_elements, cover_edges, scores))
+        return 7.5
+
+    monkeypatch.setattr(
+        closure,
+        "_rust_max_antichain_score_data",
+        fake_rust_backend,
+    )
+
+    result = max_antichain_score_data(2, [(0, 1)], [2, 3])
+
+    assert calls == [(2, [(0, 1)], [2.0, 3.0])]
+    assert result == 7.5
 
 
 def test_linear_extension_count_data_counts_indexed_extensions():

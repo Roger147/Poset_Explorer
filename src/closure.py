@@ -5,6 +5,7 @@ can map results back to element labels, while a future Rust implementation can
 replace this backend without changing analyzer-facing behavior.
 """
 
+import math
 from collections.abc import Iterable
 
 DEFAULT_LINEAR_EXTENSION_STATE_LIMIT = 1_000_000
@@ -14,6 +15,7 @@ try:
         interval_summary_data as _rust_interval_summary_data,
         lattice_layer_sizes as _rust_lattice_layer_sizes,
         linear_extension_count_data as _rust_linear_extension_count_data,
+        max_antichain_score_data as _rust_max_antichain_score_data,
         mobius_matrix_data as _rust_mobius_matrix_data,
         principal_ideal_filter_sizes as _rust_principal_ideal_filter_sizes,
         strict_zeta_transform_data as _rust_strict_zeta_transform_data,
@@ -26,6 +28,7 @@ except ImportError:
     _rust_interval_summary_data = None
     _rust_lattice_layer_sizes = None
     _rust_linear_extension_count_data = None
+    _rust_max_antichain_score_data = None
     _rust_mobius_matrix_data = None
     _rust_principal_ideal_filter_sizes = None
     _rust_strict_zeta_transform_data = None
@@ -197,6 +200,24 @@ def linear_extension_count_data(
         return _rust_linear_extension_count_data(num_elements, cover_edges, max_states)
 
     return _python_linear_extension_count(num_elements, cover_edges, max_states)
+
+
+def max_antichain_score_data(
+    num_elements: int,
+    cover_edges: Iterable[tuple[int, int]],
+    element_scores: Iterable[int | float],
+) -> float:
+    """Return the maximum signed antichain score through an f64 backend path."""
+    cover_edges = list(cover_edges)
+    score_vector = [float(score) for score in element_scores]
+    if len(score_vector) != num_elements:
+        raise ValueError("score vector length must match the element count")
+
+    if _rust_max_antichain_score_data is not None:
+        return _rust_max_antichain_score_data(num_elements, cover_edges, score_vector)
+
+    closure = _python_transitive_successor_closure(num_elements, cover_edges)
+    return _python_max_antichain_score(num_elements, closure, score_vector)
 
 
 def interval_summary_data(
@@ -404,6 +425,87 @@ def _python_linear_extension_count(
         return total
 
     return count(remaining)
+
+
+def _python_max_antichain_score(
+    num_elements: int,
+    closure: list[set[int]],
+    element_scores: list[float],
+) -> float:
+    if any(not math.isfinite(score) for score in element_scores):
+        raise ValueError("element scores must be finite numbers")
+
+    positive_scores = [max(score, 0.0) for score in element_scores]
+    total_score = sum(positive_scores)
+    if total_score <= 0:
+        return 0.0
+
+    source = ("source", "s")
+    sink = ("sink", "t")
+    infinite_capacity = total_score + 1
+    capacities = {}
+
+    for element_index, score in enumerate(positive_scores):
+        left = ("out", element_index)
+        right = ("in", element_index)
+        capacities[(source, left)] = score
+        capacities[(right, sink)] = score
+
+        for successor_index in closure[element_index]:
+            capacities[(left, ("in", successor_index))] = infinite_capacity
+
+    return max(total_score - _python_max_flow(capacities, source, sink), 0.0)
+
+
+def _python_max_flow(
+    capacities: dict[tuple[object, object], float],
+    source,
+    sink,
+) -> float:
+    residual = {}
+    adjacency = {}
+
+    for (start, end), capacity in capacities.items():
+        residual[(start, end)] = residual.get((start, end), 0.0) + capacity
+        residual.setdefault((end, start), 0.0)
+        adjacency.setdefault(start, set()).add(end)
+        adjacency.setdefault(end, set()).add(start)
+
+    flow = 0.0
+    while True:
+        parent = {source: None}
+        queue = [source]
+
+        while queue and sink not in parent:
+            current = queue.pop(0)
+            for neighbor in adjacency.get(current, ()):
+                if neighbor not in parent and residual[(current, neighbor)] > 0:
+                    parent[neighbor] = current
+                    queue.append(neighbor)
+
+        if sink not in parent:
+            return flow
+
+        path_capacity = None
+        current = sink
+        while current != source:
+            previous = parent[current]
+            edge_capacity = residual[(previous, current)]
+            path_capacity = (
+                edge_capacity
+                if path_capacity is None
+                else min(path_capacity, edge_capacity)
+            )
+            current = previous
+
+        current = sink
+        while current != source:
+            previous = parent[current]
+            residual[(previous, current)] -= path_capacity
+            residual[(current, previous)] += path_capacity
+            current = previous
+
+        flow += path_capacity
 
 
 def _python_interval_sizes(

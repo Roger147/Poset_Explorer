@@ -20,5 +20,9 @@ path = "rust/tests/ideals.rs"
 name = "extensions"
 path = "rust/tests/extensions.rs"
 
+[[test]]
+name = "weighted"
+path = "rust/tests/weighted.rs"
+
 [dependencies]
 pyo3 = { version = "0.23", features = ["extension-module"] }
