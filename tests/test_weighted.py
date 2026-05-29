@@ -163,13 +163,13 @@ def test_max_chain_score_allows_negative_weights():
     assert analyzer.max_chain_score(mode="both") == 110
 
 
-def test_max_chain_score_uses_nonempty_chain_when_elements_are_negative():
+def test_max_chain_score_allows_empty_chain_when_elements_are_negative():
     weighted = WeightedPoset(
         chain(2),
         element_weights={"x1": -5, "x2": -1},
     )
 
-    assert WeightedPosetAnalyzer(weighted).max_chain_score() == -1
+    assert WeightedPosetAnalyzer(weighted).max_chain_score() == 0
 
 
 @pytest.mark.parametrize(

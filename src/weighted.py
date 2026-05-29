@@ -173,14 +173,16 @@ class WeightedPosetAnalyzer:
         Return the maximum signed chain score.
 
         This uses the same chain accumulation rules as max_chain_weight(), but
-        allows negative weights. On a nonempty poset the optimized chain is
-        nonempty; in edge-only mode, a singleton chain has score 0.
+        allows negative weights. This is a global optimization: the empty
+        chain is allowed, so the result is never below 0.
 
         Chains are scored along stored cover-edge paths. Element scoring
         includes every intermediate element on that path; it does not skip
-        negative intermediate elements via transitive comparability. Future
-        interval-native weighting can represent those skip-style interpretations
-        explicitly.
+        negative intermediate elements via transitive comparability. Specific
+        negative contributions can still appear in explicit ideals and
+        intervals, where the selected substructure is already defined.
+        Future interval-native weighting can represent skip-style traversal
+        interpretations explicitly.
         """
         self._validate_chain_weight_mode(mode)
 
@@ -200,7 +202,7 @@ class WeightedPosetAnalyzer:
                 )
                 best_ending_at[target] = max(best_ending_at[target], candidate)
 
-        return max(best_ending_at.values())
+        return max(0, max(best_ending_at.values()))
 
     def weighted_width(self) -> Number:
         """
@@ -225,9 +227,12 @@ class WeightedPosetAnalyzer:
         """
         Return the maximum signed score of an antichain.
 
-        Negative element scores are allowed. The empty antichain is allowed, so
-        the result is never below 0. Edge weights are ignored. Scores are
-        computed through an f64-compatible backend path.
+        Negative element scores are allowed. This is a global optimization:
+        the empty antichain is allowed, so the result is never below 0. Edge
+        weights are ignored. Specific negative contributions can still appear
+        in explicit ideals and intervals, where the selected substructure is
+        already defined. Scores are computed through an f64-compatible backend
+        path.
         """
         return max_antichain_score_data(
             len(self.poset.order),
